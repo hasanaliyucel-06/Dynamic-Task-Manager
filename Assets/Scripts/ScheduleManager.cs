@@ -23,6 +23,13 @@ public class Task
     }
 }
 
+// JsonUtility listeleri doğrudan desteklemediği için yardımcı sınıf kullanıyoruz.
+[System.Serializable]
+public class TaskWrapper
+{
+    public List<Task> tasks;
+}
+
 public class ScheduleManager : MonoBehaviour
 {
     // Task objelerinin tutulduğu liste
@@ -34,27 +41,20 @@ public class ScheduleManager : MonoBehaviour
     // Görev listesinde veya gecikmelerde bir değişiklik olduğunda tetiklenir (UI yenilemek için)
     public UnityEvent onScheduleUpdated;
 
+    public TaskListManager taskListManager;
+
     private void Start()
     {
-        // Örnek bir durum görmek isterseniz diye geçici görevler ekledik.
-        // İsterseniz Inspector'dan kendiniz de görev ekleyebilirsiniz.
-        /*
-        tasks.Add(new Task("Toplantı", 60, true));        // Katı
-        tasks.Add(new Task("Kod Yazımı", 120, false));    // Esnek
-        tasks.Add(new Task("Öğle Yemeği", 60, true));     // Katı
-        tasks.Add(new Task("Araştırma", 90, false));      // Esnek
+        LoadTasks();
         
-        Debug.Log("--- Başlangıç Durumu ---");
-        PrintTasks();
-        
-        Debug.Log("--- 30 Dakika Gecikme Uyguluyoruz ---");
-        ApplyDelay(30);
-        PrintTasks();
-
-        Debug.Log("--- 150 Dakika Gecikme Uyguluyoruz (Borç Aktarılacak) ---");
-        ApplyDelay(150);
-        PrintTasks();
-        */
+        if (taskListManager != null)
+        {
+            taskListManager.RefreshList();
+        }
+        else
+        {
+            onScheduleUpdated?.Invoke();
+        }
     }
 
     private void Update()
@@ -142,6 +142,9 @@ public class ScheduleManager : MonoBehaviour
 
         // Tüm değişiklikler bittikten sonra UI'ı veya diğer dinleyicileri tetikle (Örn: TaskListManager)
         onScheduleUpdated?.Invoke();
+        
+        // Değişikliği anında kaydet
+        SaveTasks();
     }
 
     /// <summary>
@@ -153,5 +156,59 @@ public class ScheduleManager : MonoBehaviour
         {
             Debug.Log($"Görev: {task.taskName} | Süre: {task.durationMinutes} dk | Katı Mı: {task.isStrictBlock} | Tamamlandı Mı: {task.isCompleted}");
         }
+    }
+
+    public void AddTask(string taskName, int duration, bool isStrict)
+    {
+        Task newTask = new Task(taskName, duration, isStrict);
+        tasks.Add(newTask);
+
+        if (taskListManager != null)
+        {
+            taskListManager.RefreshList();
+        }
+        else
+        {
+            onScheduleUpdated?.Invoke();
+        }
+        
+        // Değişikliği anında kaydet
+        SaveTasks();
+    }
+
+    public void SaveTasks()
+    {
+        TaskWrapper wrapper = new TaskWrapper();
+        wrapper.tasks = this.tasks;
+        string json = JsonUtility.ToJson(wrapper);
+        PlayerPrefs.SetString("SavedTasks", json);
+        PlayerPrefs.Save();
+        Debug.Log("[ScheduleManager] Görevler kaydedildi.");
+    }
+
+    public void LoadTasks()
+    {
+        if (PlayerPrefs.HasKey("SavedTasks"))
+        {
+            string json = PlayerPrefs.GetString("SavedTasks");
+            TaskWrapper wrapper = JsonUtility.FromJson<TaskWrapper>(json);
+            
+            // Veri varsa listeye ata
+            if (wrapper != null && wrapper.tasks != null && wrapper.tasks.Count > 0)
+            {
+                this.tasks = wrapper.tasks;
+                Debug.Log("[ScheduleManager] Görevler başarıyla yüklendi.");
+                return;
+            }
+        }
+        
+        // Hiç kayıt yoksa (veya liste boşsa/bozulmuşsa) varsayılan görevleri kullan
+        Debug.Log("[ScheduleManager] Kayıt bulunamadı, varsayılan görevler oluşturuluyor.");
+        tasks.Clear();
+        tasks.Add(new Task("Hazırlık ve E-postalar", 30, true));
+        tasks.Add(new Task("Programlama", 120, false));
+        tasks.Add(new Task("Öğle Yemeği", 60, true));
+        tasks.Add(new Task("Proje Tasarımı", 90, false));
+        SaveTasks();
     }
 }

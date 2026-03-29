@@ -1,11 +1,14 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class UIManager : MonoBehaviour
 {
     [Header("Referanslar")]
     public ScheduleManager scheduleManager; // Toplam gecikmeyi okuyacağımız sınıf
     public Image stressBar; // UI'daki Image bileşeni (fillAmount değiştireceğiz)
+    public TMP_InputField nameInput;
+    public TMP_InputField durationInput;
 
     [Header("Stress Ayarları")]
     public int maxTolerableDelay = 120; // 120 dakika maksimum tolerans
@@ -58,5 +61,53 @@ public class UIManager : MonoBehaviour
         // 3. Barın Rengini (Color.Lerp) Güncelle
         // delayRatio 0 olduğunda lowStressColor, 1 olduğunda highStressColor olur
         stressBar.color = Color.Lerp(lowStressColor, highStressColor, delayRatio);
+    }
+
+    public void CreateNewTaskFromUI(string name, string durationString)
+    {
+        if (int.TryParse(durationString, out int duration))
+        {
+            if (scheduleManager != null)
+            {
+                scheduleManager.AddTask(name, duration, false); // şimdilik esnek (isStrict = false)
+            }
+            else
+            {
+                Debug.LogWarning("[UIManager] ScheduleManager referansı yok!");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("[UIManager] Geçersiz süre girişi: " + durationString);
+        }
+    }
+
+    /// <summary>
+    /// TMP_InputField referanslarından gelen verilerle yeni bir görev ekler.
+    /// </summary>
+    public void AddNewTaskFromUI()
+    {
+        string taskName = nameInput != null ? nameInput.text : "";
+        string durationStr = durationInput != null ? durationInput.text : "";
+
+        // Süreyi çevir, geçersizse 0 kabul et
+        if (!int.TryParse(durationStr, out int duration))
+        {
+            duration = 0;
+        }
+
+        if (scheduleManager != null)
+        {
+            // Görevi şimdilik esnek (false) olarak ekliyoruz
+            scheduleManager.AddTask(taskName, duration, false);
+        }
+        else
+        {
+            Debug.LogWarning("[UIManager] ScheduleManager referansı yok!");
+        }
+
+        // Kutu içlerini temizle
+        if (nameInput != null) nameInput.text = "";
+        if (durationInput != null) durationInput.text = "";
     }
 }
