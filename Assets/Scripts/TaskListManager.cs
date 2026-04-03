@@ -43,7 +43,7 @@ public class TaskListManager : MonoBehaviour
             TaskItemUI taskUI = newTaskObj.GetComponent<TaskItemUI>();
             if (taskUI != null)
             {
-                taskUI.UpdateUI(task.taskName, task.durationMinutes, task.isStrictBlock);
+                taskUI.Setup(task, scheduleManager);
             }
         }
     }
