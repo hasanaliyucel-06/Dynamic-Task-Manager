@@ -2970,7 +2970,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4aac05a2bf140ee429beca5dd7e1a90d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GeminiManager
-  apiKey: AIzaSyDw8KTyhGW2CJeM1pBfpmVvtRNw0D0ouIY
+  apiKey: BURAYA_KEY_GELECEK
   aiResponseText: {fileID: 1131262140}
   aiInputField: {fileID: 644691294}
 --- !u!1 &1302079949
