@@ -2,9 +2,13 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.Networking;
 using TMPro; // Arayüz kutucuklarının görünmesi için en önemli satır!
+using System.Text.RegularExpressions;
 
 public class GeminiManager : MonoBehaviour
 {
+    [Header("Referanslar")]
+    [SerializeField] private TaskListManager taskManager;
+
     [Header("API Ayarları")]
     [SerializeField] private string apiKey;
     private string apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
@@ -19,11 +23,15 @@ public class GeminiManager : MonoBehaviour
         if (aiInputField != null && !string.IsNullOrEmpty(aiInputField.text))
         {
             string mesaj = aiInputField.text;
+            
+            string systemDirective = "Sen benim acımasız ve karanlık kişisel asistanımsın. Bana daima gotik, otoriter ve havalı bir tonda kısa cevaplar ver. EĞER senden yeni bir görev/iş/plan eklemeni istersem, bana normal cevabını verdikten sonra cümlenin EN SONUNA tam olarak şu formatta gizli bir kod ekle: [GOREV:GörevAdı:Dakika]. Örneğin: [GOREV:Elektro Gitar:60]. Eğer benden bir süre belirtilmediyse varsayılan olarak 30 dakika yaz. Eğer görev eklememi istemiyorsam kod ekleme. Kullanıcının mesajı: ";
+            string promptToSend = systemDirective + mesaj;
+
             aiInputField.text = ""; // Gönderdikten sonra yazma kutusunu temizle
 
             if (aiResponseText != null) aiResponseText.text = "Sekreter düşünüyor..."; // Bekleme mesajı
 
-            StartCoroutine(AskSecretary(mesaj));
+            StartCoroutine(AskSecretary(promptToSend));
         }
     }
 
@@ -51,6 +59,31 @@ public class GeminiManager : MonoBehaviour
             {
                 // Kargo kutusunu açıp sadece yazıyı alan kısım
                 string temizCevap = CevabiAyikla(request.downloadHandler.text);
+
+                // Regex ile [GOREV:GörevAdı:Dakika] kontrolü
+                Match match = Regex.Match(temizCevap, @"\[GOREV:(.*?):(\d+)\]");
+                if (match.Success)
+                {
+                    string gorevAdi = match.Groups[1].Value.Trim();
+                    string dakika = match.Groups[2].Value;
+                    Debug.LogWarning("OTOMATİK GÖREV YAKALANDI: " + gorevAdi + " - " + dakika + " dk");
+
+                    if (taskManager != null && taskManager.scheduleManager != null)
+                    {
+                        if (int.TryParse(dakika, out int sure))
+                        {
+                            taskManager.scheduleManager.AddTask(gorevAdi, sure, false);
+                            Debug.Log("Görev başarıyla listeye eklendi!");
+                        }
+                    }
+                    else if (taskManager == null)
+                    {
+                        Debug.LogWarning("GeminiManager üzerinde TaskListManager referansı eksik!");
+                    }
+
+                    // Kodu metinden sil
+                    temizCevap = temizCevap.Replace(match.Value, "").Trim();
+                }
 
                 Debug.LogWarning("SEKRETER DİYOR Kİ: " + temizCevap);
                 if (aiResponseText != null) aiResponseText.text = temizCevap;
