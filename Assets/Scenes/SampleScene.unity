@@ -2963,7 +2963,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GeminiManager
   taskManager: {fileID: 1300362008}
-  apiKey: AIzaSyBgXK-gQ5WSNlZPGF6M2AiaKcTIoCPA920
+  apiKey: BURYAAKEYGELECEK
   aiResponseText: {fileID: 1131262140}
   aiInputField: {fileID: 644691294}
 --- !u!1 &1302079949
