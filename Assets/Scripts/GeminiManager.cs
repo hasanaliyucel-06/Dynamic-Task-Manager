@@ -29,7 +29,16 @@ public class GeminiManager : MonoBehaviour
 
             aiInputField.text = ""; // Gönderdikten sonra yazma kutusunu temizle
 
-            if (aiResponseText != null) aiResponseText.text = "Sekreter düşünüyor..."; // Bekleme mesajı
+            if (aiResponseText != null)
+            {
+                TypewriterEffect daktilo = aiResponseText.GetComponent<TypewriterEffect>();
+                if (daktilo != null)
+                {
+                    // Önceki yazma işlemini durdur ki "düşünüyor" yazısı silinmesin
+                    daktilo.StopAllCoroutines();
+                }
+                aiResponseText.text = "Sekreter düşünüyor..."; // Bekleme mesajı
+            }
 
             StartCoroutine(AskSecretary(promptToSend));
         }
@@ -86,7 +95,18 @@ public class GeminiManager : MonoBehaviour
                 }
 
                 Debug.LogWarning("SEKRETER DİYOR Kİ: " + temizCevap);
-                if (aiResponseText != null) aiResponseText.text = temizCevap;
+                if (aiResponseText != null)
+                {
+                    TypewriterEffect daktilo = aiResponseText.GetComponent<TypewriterEffect>();
+                    if (daktilo != null)
+                    {
+                        daktilo.MetniYazdir(temizCevap);
+                    }
+                    else
+                    {
+                        aiResponseText.text = temizCevap;
+                    }
+                }
             }
         }
     }
