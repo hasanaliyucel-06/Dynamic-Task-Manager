@@ -4587,7 +4587,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GeminiManager
   taskManager: {fileID: 1300362008}
-  apiKey: AIzaSyAiofingWUaiP6gV2rXpPoRfrBrEqlIEG4
+  apiKey: 
   aiResponseText: {fileID: 0}
   aiInputField: {fileID: 0}
 --- !u!1 &1302079949
@@ -6099,7 +6099,7 @@ MonoBehaviour:
   sendButton: {fileID: 497433676}
   scrollRect: {fileID: 140717989}
   locManager: {fileID: 732362524}
-  apiKey: AIzaSyAiofingWUaiP6gV2rXpPoRfrBrEqlIEG4
+  apiKey: 
 --- !u!1 &1949068735
 GameObject:
   m_ObjectHideFlags: 0
