@@ -1,0 +1,29 @@
+VisualElement {}
+/* Figma'daki o yumuşak köşeli, premium mavi buton */
+.premium-buton {
+    background-color: #007AFF; /* Apple Mavisi */
+    color: #FFFFFF; /* Beyaz Yazı */
+    font-size: 18px;
+    -unity-font-style: bold;
+    border-radius: 30px; /* SİHİR BURADA: Köşeleri pürüzsüz yuvarlar */
+    border-width: 0;
+    padding-top: 15px;
+    padding-bottom: 15px;
+    padding-left: 30px;
+    padding-right: 30px;
+    transition-duration: 0.2s; /* Üzerine gelince animasyon için */
+}
+
+/* Mouse ile üzerine gelince (Hover) efekti */
+.premium-buton:hover {
+    background-color: #005BB5;
+    scale: 1.05; /* Hafifçe büyür */
+}
+
+/* O arkadaki beyaz/gri yumuşak kart paneli */
+.modern-kart {
+    background-color: #FFFFFF;
+    border-radius: 20px;
+    padding: 20px;
+    margin: 10px;
+}

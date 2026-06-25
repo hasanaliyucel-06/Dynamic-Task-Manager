@@ -1,0 +1,7 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/Scripts/ModernTheme.uss?fileID=7433441132597879392&amp;guid=15056cd9b967be844ad7112af93a890b&amp;type=3#ModernTheme"/>
+    <ui:VisualElement name="AltKutu" class="bottom-bar" style="flex-grow: 1;">
+        <ui:TextField label="Text Field" placeholder-text="filler text" name="txtMesaj" class="premium-input"/>
+        <ui:Button text="İLET" name="btnGonder" enable-rich-text="true" class="premium-buton"/>
+    </ui:VisualElement>
+</ui:UXML>

@@ -1,59 +1,41 @@
-using System.Collections;
 using UnityEngine;
+using System.Collections;
 
 public class LocationManager : MonoBehaviour
 {
-    // Butonun tetiklediği ana metot bu (Inspector'da bağlı olan)
-    public void CheckLocationPenalty()
-    {
-        Debug.LogWarning("GPS Sensörleri Uyandırılıyor...");
-        StartCoroutine(GetLocationRoutine());
-    }
+    public float latitude;
+    public float longitude;
+    public bool locationReady = false;
 
-    private IEnumerator GetLocationRoutine()
+    IEnumerator Start()
     {
-        // 1. AŞAMA: Eğer kodu bilgisayarda (Unity Editor) çalıştırıyorsak
-#if UNITY_EDITOR
-            yield return new WaitForSeconds(1.5f); // Uydulara bağlanıyormuş gibi 1.5 saniye bekle
-            // Sana özel bir easter egg: Bilgisayardayken Ankara koordinatlarını döndürsün :)
-            Debug.LogWarning("GERÇEK KONUM ALINDI (PC Simülasyonu): Enlem 39.92077 - Boylam 32.85411"); 
-            yield break; // Metodu burada bitir, telefona özel kısımlara inme
-#endif
-
-        // 2. AŞAMA: Eğer kodu Android/iOS telefonda çalıştırıyorsak
+        // Kullanıcı konum izni vermediyse işlemi durdur
         if (!Input.location.isEnabledByUser)
         {
-            Debug.LogError("Kullanıcı GPS izni vermemiş veya konum kapalı!");
+            Debug.Log("Antigravity: Konum izni verilmedi.");
             yield break;
         }
 
-        Input.location.Start(10f, 10f); // Hassasiyeti ayarlayıp GPS'i başlat
+        Input.location.Start();
 
-        int maxWait = 20; // Maksimum 20 saniye bekle
+        int maxWait = 20;
         while (Input.location.status == LocationServiceStatus.Initializing && maxWait > 0)
         {
             yield return new WaitForSeconds(1);
             maxWait--;
         }
 
-        if (maxWait <= 0)
+        if (maxWait < 1 || Input.location.status == LocationServiceStatus.Failed)
         {
-            Debug.LogError("GPS Zaman Aşımı: Uydular bulunamadı.");
-            Input.location.Stop();
+            Debug.Log("Antigravity: Konum saptanamadı. Bağlantı zayıf veya kapalı.");
             yield break;
         }
 
-        if (Input.location.status == LocationServiceStatus.Failed)
-        {
-            Debug.LogError("GPS Bağlantı Hatası: Cihaz konumu saptayamadı.");
-            yield break;
-        }
-
-        // Zafere Ulaştığımız An:
-        float latitude = Input.location.lastData.latitude;
-        float longitude = Input.location.lastData.longitude;
-        Debug.LogWarning("GERÇEK KONUM ALINDI (Mobil): Enlem " + latitude + " - Boylam " + longitude);
-
-        Input.location.Stop(); // Bataryayı emmesin diye GPS'i anında kapat
+        // Konum alındıysa değişkenlere ata
+        latitude = Input.location.lastData.latitude;
+        longitude = Input.location.lastData.longitude;
+        locationReady = true;
+        
+        Debug.Log($"Antigravity: Konum kilitlendi Boss! Enlem: {latitude}, Boylam: {longitude}");
     }
 }

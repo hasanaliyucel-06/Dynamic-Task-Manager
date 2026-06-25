@@ -13,6 +13,8 @@ public class SiberAsistan : MonoBehaviour
     public Button sendButton;
     public ScrollRect scrollRect;
 
+    public LocationManager locManager; // (Bunu Unity Editor'den bağlamayı unutma!)
+
     [Header("API Ayarları")]
     public string apiKey = ""; 
     private string apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
@@ -28,14 +30,38 @@ public class SiberAsistan : MonoBehaviour
         string kullaniciMesaji = inputField.text;
         inputField.text = ""; 
 
-        // Ekrana kullanıcının mesajını yazdır
         YeniMesaj("Sen: " + kullaniciMesaji, Color.white, TextAlignmentOptions.TopRight);
         
-        // Senin harika direktifin ve görev motorun
-        string systemDirective = "Sen benim acımasız ve karanlık kişisel asistanımsın. Bana daima gotik, otoriter ve havalı bir tonda kısa cevaplar ver. EĞER senden yeni bir görev/iş/plan eklemeni istersem, bana normal cevabını verdikten sonra cümlenin EN SONUNA tam olarak şu formatta gizli bir kod ekle: [GOREV:GörevAdı:Dakika]. Örneğin: [GOREV:Elektro Gitar:60]. Eğer benden bir süre belirtilmediyse varsayılan olarak 30 dakika yaz. Eğer görev eklememi istemiyorsam kod ekleme. Kullanıcının mesajı: ";
-        string promptToSend = systemDirective + kullaniciMesaji;
+        // Asistana konum verisini fısıldıyoruz
+        string locationContext = "";
+        if (locManager != null && locManager.locationReady)
+        {
+            locationContext = $"[GİZLİ SİSTEM BİLGİSİ: Kullanıcının şu anki koordinatları Enlem: {locManager.latitude}, Boylam: {locManager.longitude}. Şehir: Aydın.] ";
+        }
+        else 
+        {
+            locationContext = "[GİZLİ SİSTEM BİLGİSİ: Şehir: Aydın (Koordinatlar henüz alınamadı, ancak kullanıcı büyük ihtimalle KYK yurdu veya Adnan Menderes Üniv. kampüsünde).] ";
+        }
 
+        // Yeni Siber Asistan Direktifi
+        string systemDirective = "Sen benim karanlık, otoriter ve kişisel asistanımsın. Eğer sana bir yere gideceğimi söylersem veya trafik sorarsam, bana Aydın içindeki (veya çevre illere olan) tahmini trafiği ve yol durumunu acımasız ve cool bir dille raporla. EĞER benden görev eklememi istersem cümlenin sonuna [GOREV:Adı:Dakika] formatında kod ekle. Sistem bilgisi: " + locationContext + " Kullanıcının mesajı: ";
+        
+        string promptToSend = systemDirective + kullaniciMesaji;
         StartCoroutine(AskSecretary(promptToSend));
+    }
+
+    public void ModernArayuzdenMesajAl(string mesaj)
+    {
+        // Eski MesajGonder mantığının aynısı, sadece dışarıdan string alıyor
+        YeniMesaj("Sen: " + mesaj, Color.white, TMPro.TextAlignmentOptions.TopRight);
+        
+        string locationContext = "";
+        if (locManager != null && locManager.locationReady)
+            locationContext = $"[Şu anki konumum: Enlem {locManager.latitude}, Boylam {locManager.longitude}. Aydın.] ";
+
+        string systemDirective = "Sen benim acımasız ve karanlık kişisel asistanımsın. Kısa ve otoriter cevap ver. [GOREV:Adı:Dakika] formatını unutma. " + locationContext + "Kullanıcı: ";
+        
+        StartCoroutine(AskSecretary(systemDirective + mesaj));
     }
 
     IEnumerator AskSecretary(string prompt)
