@@ -5,6 +5,7 @@ public class ModernAsistanBaglantisi : MonoBehaviour
 {
     private UIDocument uiDocument;
     private Button gonderButonu;
+    private bool isRequestActive = false;
     private TextField mesajGirdisi;
     private ScrollView scrollSohbet;
     private Label lblStatus;
@@ -25,13 +26,17 @@ public class ModernAsistanBaglantisi : MonoBehaviour
 
         if (gonderButonu != null)
         {
+            gonderButonu.clicked -= MesajGonderildi;
             gonderButonu.clicked += MesajGonderildi;
         }
     }
 
     void MesajGonderildi()
     {
-        if (mesajGirdisi == null || string.IsNullOrWhiteSpace(mesajGirdisi.value)) return;
+        if (isRequestActive || mesajGirdisi == null || string.IsNullOrWhiteSpace(mesajGirdisi.value)) return;
+
+        isRequestActive = true;
+        if (gonderButonu != null) gonderButonu.SetEnabled(false);
 
         string gidenMesaj = mesajGirdisi.value;
         Debug.Log("Antigravity: Gönderilen Mesaj: " + gidenMesaj);
@@ -47,6 +52,11 @@ public class ModernAsistanBaglantisi : MonoBehaviour
 
     public void EkranaMesajBas(string metin, bool kullaniciMi)
     {
+        if (!kullaniciMi) {
+            isRequestActive = false;
+            if (gonderButonu != null) gonderButonu.SetEnabled(true);
+        }
+
         if (scrollSohbet == null) return;
 
         Label label = new Label();
@@ -97,6 +107,8 @@ public class ModernAsistanBaglantisi : MonoBehaviour
     }
 
     public void DurumCevrimiciYap() {
+        if (gonderButonu != null) gonderButonu.SetEnabled(true);
+
         if(lblStatus != null) {
             lblStatus.text = "Çevrimiçi";
             Color c;

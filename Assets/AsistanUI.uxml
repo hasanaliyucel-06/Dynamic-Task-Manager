@@ -4,7 +4,7 @@
     <ui:VisualElement class="main-container" style="flex-grow: 1;">
         
         <!-- SOHBET SAYFASI -->
-        <ui:VisualElement name="PageSohbet" class="page" style="display: flex;">
+        <ui:VisualElement name="Page_Sohbet" class="page" style="display: flex;">
             <ui:VisualElement name="UstBar" class="top-bar">
                 <ui:Label text="SİBER ASİSTAN" class="header-title" />
                 <ui:Label text="Çevrimiçi" class="header-status" />
@@ -17,25 +17,15 @@
         </ui:VisualElement>
 
         <!-- GÖREVLER SAYFASI -->
-        <ui:VisualElement name="PageGorevler" class="page" style="display: none;">
+        <ui:VisualElement name="Page_Gorevler" class="page" style="display: none;">
             <ui:VisualElement class="top-bar">
                 <ui:Label text="GÖREV YÖNETİMİ" class="header-title" />
                 <ui:Label text="2 Aktif Görev" class="header-status" style="color: #60A5FA;" />
             </ui:VisualElement>
-            <ui:ScrollView name="scrollGorevler" class="chat-ekrani">
-                <!-- Statik Örnek Görev Kartları -->
-                <ui:VisualElement class="task-card">
-                    <ui:Label text="Ağ Taraması Başlat" style="font-size: 15px; -unity-font-style: bold; margin-bottom: 5px;"/>
-                    <ui:Label text="Yerel ağdaki yetkisiz giriş denemeleri analiz ediliyor." style="font-size: 12px; color: #9CA3AF; white-space: normal;"/>
-                </ui:VisualElement>
-                <ui:VisualElement class="task-card" style="border-left-color: #EF4444;">
-                    <ui:Label text="Güvenlik Duvarı Güncellemesi" style="font-size: 15px; -unity-font-style: bold; margin-bottom: 5px;"/>
-                    <ui:Label text="Acil yama gerektiren 3 güvenlik açığı bulundu." style="font-size: 12px; color: #9CA3AF; white-space: normal;"/>
-                </ui:VisualElement>
-            </ui:ScrollView>
+            <ui:ScrollView name="GorevScrollView" class="chat-ekrani" />
             <ui:VisualElement class="bottom-bar">
-                <ui:TextField placeholder-text="Yeni görev ekle..." name="txtYeniGorev" class="premium-input"/>
-                <ui:Button text="EKLE" name="btnGorevEkle" enable-rich-text="true" class="premium-buton" style="background-color: #10B981;"/>
+                <ui:TextField placeholder-text="Yeni görev ekle..." name="Input_YeniGorev" class="premium-input"/>
+                <ui:Button text="EKLE" name="Btn_GorevEkle" enable-rich-text="true" class="premium-buton"/>
             </ui:VisualElement>
         </ui:VisualElement>
 
@@ -43,8 +33,8 @@
 
     <!-- TAB BAR (SABİT ALT MENÜ) -->
     <ui:VisualElement name="TabBar" class="tab-bar">
-        <ui:Button text="Sohbet" name="btnTabSohbet" class="tab-button tab-button-active" />
-        <ui:Button text="Görevler" name="btnTabGorevler" class="tab-button" />
+        <ui:Button text="Sohbet" name="Btn_TabSohbet" class="tab-button tab-button-active" />
+        <ui:Button text="Görevler" name="Btn_TabGorevler" class="tab-button" />
     </ui:VisualElement>
 
 </ui:UXML>

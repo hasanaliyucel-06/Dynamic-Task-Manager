@@ -158,6 +158,16 @@ public class ScheduleManager : MonoBehaviour
         }
     }
 
+    public void RemoveTask(string taskName)
+    {
+        Task taskToRemove = tasks.Find(t => t.taskName == taskName);
+        if (taskToRemove != null)
+        {
+            tasks.Remove(taskToRemove);
+            SaveTasks();
+        }
+    }
+
     public void AddTask(string taskName, int duration, bool isStrict)
     {
         Task newTask = new Task(taskName, duration, isStrict);
@@ -198,6 +208,13 @@ public class ScheduleManager : MonoBehaviour
             {
                 this.tasks = wrapper.tasks;
                 Debug.Log("[ScheduleManager] Görevler başarıyla yüklendi.");
+                
+                PageNavigator navigator = FindFirstObjectByType<PageNavigator>();
+                if (navigator != null) {
+                    foreach (var gorev in this.tasks) {
+                        navigator.GorevKartiEkle(gorev.taskName, gorev.durationMinutes.ToString(), gorev.isStrictBlock, false); 
+                    }
+                }
                 return;
             }
         }
@@ -210,5 +227,12 @@ public class ScheduleManager : MonoBehaviour
         tasks.Add(new Task("Öğle Yemeği", 60, true));
         tasks.Add(new Task("Proje Tasarımı", 90, false));
         SaveTasks();
+
+        PageNavigator nav = FindFirstObjectByType<PageNavigator>();
+        if (nav != null) {
+            foreach (var gorev in tasks) {
+                nav.GorevKartiEkle(gorev.taskName, gorev.durationMinutes.ToString(), gorev.isStrictBlock, false); 
+            }
+        }
     }
 }

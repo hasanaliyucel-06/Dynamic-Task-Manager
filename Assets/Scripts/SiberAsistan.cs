@@ -11,7 +11,7 @@ public class SiberAsistan : MonoBehaviour
 
     [Header("API Ayarları")]
     public string apiKey = ""; 
-    private string apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+    private string apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent";
 
     public void ModernArayuzdenMesajAl(string mesaj)
     {
@@ -24,7 +24,7 @@ public class SiberAsistan : MonoBehaviour
         if (locManager != null && locManager.locationReady)
             locationContext = $"[Şu anki konumum: Enlem {locManager.latitude}, Boylam {locManager.longitude}. Aydın.] ";
 
-        string systemDirective = "Sen benim acımasız ve karanlık kişisel asistanımsın. Kısa ve otoriter cevap ver. [GOREV:Adı:Dakika] formatını unutma. " + locationContext + "Kullanıcı: ";
+        string systemDirective = "Sen benim acımasız ve karanlık kişisel asistanımsın. Kısa ve otoriter cevap ver. KULLANICI SENDEN BİR GÖREV OLUŞTURMANI İSTERSE VEYA BİR EYLEMİ ONAYLARSAN, cevabının en sonuna MUTLAKA şu formatta bir görev etiketi ekle: [GOREV:Görev Adı:Süre]. Süre kısmı SADECE DAKİKA CİNSİNDEN TAM SAYI olmalıdır (Örn: 30, 45, 60). Asla metin, boşluk veya soru işareti (?) kullanma. Eğer kullanıcı bir süre belirtmediyse varsayılan olarak 30 yaz. " + locationContext + "Kullanıcı: ";
         
         if (modernUI != null) modernUI.DurumYaziyorYap();
         StartCoroutine(AskSecretary(systemDirective + mesaj));
@@ -66,6 +66,8 @@ public class SiberAsistan : MonoBehaviour
                     hataMetni = request.error;
                 }
 
+                Debug.LogError("🚨 GOOGLE API RAW HATA: " + hataMetni);
+
                 if (modernUI != null) {
                     if (hataMetni.Contains("429") || hataMetni.Contains("quota") || hataMetni.Contains("RESOURCE_EXHAUSTED")) {
                         modernUI.EkranaMesajBas("Sistem ağında yoğunluk tespit edildi. Protokollerin soğuması için lütfen 30 saniye bekleyin.", false);
@@ -93,6 +95,12 @@ public class SiberAsistan : MonoBehaviour
                         string gorevAdi = match.Groups[1].Value.Trim();
                         string dakika = match.Groups[2].Value;
                         Debug.LogWarning("OTOMATİK GÖREV YAKALANDI: " + gorevAdi + " - " + dakika + " dk");
+                        
+                        PageNavigator nav = FindFirstObjectByType<PageNavigator>();
+                        if (nav != null) {
+                            nav.GorevKartiEkle(gorevAdi, dakika, false); // Katı durumu varsa boolean'ı true yap.
+                        }
+
                         // İleride TaskManager'a bağlayacağız, şimdilik ekrandaki yazıdan temizliyoruz
                         temizCevap = temizCevap.Replace(match.Value, "").Trim();
                     }
@@ -109,20 +117,37 @@ public class SiberAsistan : MonoBehaviour
 
     private string CevabiAyikla(string jsonStr)
     {
-        string aranan = "\"text\": \"";
-        int baslangic = jsonStr.IndexOf(aranan);
-        if (baslangic != -1)
-        {
-            baslangic += aranan.Length;
-            int bitis = jsonStr.LastIndexOf("\"\n          }");
-            if (bitis == -1) bitis = jsonStr.IndexOf("\"", baslangic);
-
-            if (bitis != -1)
-            {
-                string sonuc = jsonStr.Substring(baslangic, bitis - baslangic);
-                return sonuc.Replace("\\n", "\n").Replace("\\\"", "\"").Replace("\\*", "*");
+        try {
+            GeminiResponse response = JsonUtility.FromJson<GeminiResponse>(jsonStr);
+            if (response != null && response.candidates != null && response.candidates.Length > 0) {
+                var content = response.candidates[0].content;
+                if (content != null && content.parts != null && content.parts.Length > 0) {
+                    return content.parts[0].text.Trim();
+                }
             }
+        } catch (System.Exception e) {
+            Debug.LogError("JSON Parse Hatası: " + e.Message);
         }
         return "Cevap anlaşılamadı...";
     }
+}
+
+[System.Serializable]
+public class GeminiResponse {
+    public GeminiCandidate[] candidates;
+}
+
+[System.Serializable]
+public class GeminiCandidate {
+    public GeminiContent content;
+}
+
+[System.Serializable]
+public class GeminiContent {
+    public GeminiPart[] parts;
+}
+
+[System.Serializable]
+public class GeminiPart {
+    public string text;
 }
