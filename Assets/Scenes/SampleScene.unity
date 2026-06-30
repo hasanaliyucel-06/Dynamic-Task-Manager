@@ -274,8 +274,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 539.60345, y: -840.70575}
-  m_SizeDelta: {x: 1039.2069, y: 1511.4115}
+  m_AnchoredPosition: {x: 540.184, y: -839.673}
+  m_SizeDelta: {x: 1040.368, y: 1509.346}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &140717991
 MonoBehaviour:
@@ -783,8 +783,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 899.33905, y: -100}
-  m_SizeDelta: {x: 359.73563, y: 200}
+  m_AnchoredPosition: {x: 900.3067, y: -100}
+  m_SizeDelta: {x: 360.12268, y: 200}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &182644801
 GameObject:
@@ -1283,7 +1283,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5dde9bd3b48a43b46b3464a8dc81a908, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ModernAsistanBaglantisi
-  siberAsistan: {fileID: 1894492353}
+  siberAsistan: {fileID: 456295832}
 --- !u!114 &256842405
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1690,6 +1690,53 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RectMask2D
   m_Padding: {x: -8, y: -5, z: -8, w: -5}
   m_Softness: {x: 0, y: 0}
+--- !u!1 &456295831
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 456295833}
+  - component: {fileID: 456295832}
+  m_Layer: 0
+  m_Name: YapayZeka_Beyni
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &456295832
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 456295831}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e52693331bb5d1b438bfa4f281db3940, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SiberAsistan
+  modernUI: {fileID: 256842404}
+  locManager: {fileID: 732362524}
+  apiKey: 
+--- !u!4 &456295833
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 456295831}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &497433675
 GameObject:
   m_ObjectHideFlags: 0
@@ -1829,8 +1876,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 760.6577, y: -45}
-  m_SizeDelta: {x: 557.09845, y: 90}
+  m_AnchoredPosition: {x: 761.52856, y: -45}
+  m_SizeDelta: {x: 557.679, y: 90}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &519420028
 GameObject:
@@ -3747,8 +3794,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 539.60345, y: -1656.4115}
-  m_SizeDelta: {x: 1039.2069, y: 90}
+  m_AnchoredPosition: {x: 540.184, y: -1654.346}
+  m_SizeDelta: {x: 1040.368, y: 90}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1145718135
 MonoBehaviour:
@@ -3832,8 +3879,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 179.86781, y: -100}
-  m_SizeDelta: {x: 359.73563, y: 200}
+  m_AnchoredPosition: {x: 180.06134, y: -100}
+  m_SizeDelta: {x: 360.12268, y: 200}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1158217450
 MonoBehaviour:
@@ -4348,8 +4395,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 539.60345, y: -45}
-  m_SizeDelta: {x: 1039.2069, y: 50}
+  m_AnchoredPosition: {x: 540.184, y: -45}
+  m_SizeDelta: {x: 1040.368, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1296689224
 MonoBehaviour:
@@ -5294,8 +5341,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 233.55423, y: -45}
-  m_SizeDelta: {x: 467.10846, y: 90}
+  m_AnchoredPosition: {x: 233.84451, y: -45}
+  m_SizeDelta: {x: 467.68903, y: 90}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1664117980
 MonoBehaviour:
@@ -6094,10 +6141,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e52693331bb5d1b438bfa4f281db3940, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SiberAsistan
-  inputField: {fileID: 1664117983}
-  chatContent: {fileID: 763303824}
-  sendButton: {fileID: 497433676}
-  scrollRect: {fileID: 140717989}
+  modernUI: {fileID: 256842404}
   locManager: {fileID: 732362524}
   apiKey: 
 --- !u!1 &1949068735
@@ -6529,8 +6573,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 539.60345, y: -100}
-  m_SizeDelta: {x: 359.73563, y: 200}
+  m_AnchoredPosition: {x: 540.184, y: -100}
+  m_SizeDelta: {x: 360.12268, y: 200}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2122658618
 MonoBehaviour:
@@ -6752,3 +6796,4 @@ SceneRoots:
   - {fileID: 1235769177}
   - {fileID: 732362525}
   - {fileID: 256842406}
+  - {fileID: 456295833}

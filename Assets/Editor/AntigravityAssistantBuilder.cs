@@ -151,10 +151,8 @@ public class AntigravityAssistantBuilder : MonoBehaviour
         SiberAsistan motor = asistanSayfasi.GetComponent<SiberAsistan>();
         if (motor == null) motor = asistanSayfasi.AddComponent<SiberAsistan>();
         
-        motor.inputField = inputField;
-        motor.chatContent = content.transform;
-        motor.sendButton = sendBtn;
-        motor.scrollRect = scroll;
+        // (Canvas UI atamaları UI Toolkit geçişi nedeniyle kaldırıldı)
+
 
         EditorUtility.SetDirty(asistanSayfasi);
         Debug.Log("Antigravity: Çentik koruması eklendi, gerçek Yapay Zeka motoru hata dedektifiyle bağlandı!");

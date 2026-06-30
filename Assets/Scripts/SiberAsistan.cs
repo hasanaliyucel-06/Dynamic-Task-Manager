@@ -1,6 +1,4 @@
 using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
 using UnityEngine.Networking;
 using System.Collections;
 using System.Text.RegularExpressions;
@@ -8,52 +6,19 @@ using System.Text.RegularExpressions;
 public class SiberAsistan : MonoBehaviour
 {
     [Header("UI Referansları")]
-    public TMP_InputField inputField;
-    public Transform chatContent;
-    public Button sendButton;
-    public ScrollRect scrollRect;
-
+    public ModernAsistanBaglantisi modernUI;
     public LocationManager locManager; // (Bunu Unity Editor'den bağlamayı unutma!)
 
     [Header("API Ayarları")]
     public string apiKey = ""; 
     private string apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
-    void Start()
-    {
-        if (sendButton != null) sendButton.onClick.AddListener(MesajGonder);
-    }
-
-    void MesajGonder()
-    {
-        if (string.IsNullOrWhiteSpace(inputField.text)) return;
-        string kullaniciMesaji = inputField.text;
-        inputField.text = ""; 
-
-        YeniMesaj("Sen: " + kullaniciMesaji, Color.white, TextAlignmentOptions.TopRight);
-        
-        // Asistana konum verisini fısıldıyoruz
-        string locationContext = "";
-        if (locManager != null && locManager.locationReady)
-        {
-            locationContext = $"[GİZLİ SİSTEM BİLGİSİ: Kullanıcının şu anki koordinatları Enlem: {locManager.latitude}, Boylam: {locManager.longitude}. Şehir: Aydın.] ";
-        }
-        else 
-        {
-            locationContext = "[GİZLİ SİSTEM BİLGİSİ: Şehir: Aydın (Koordinatlar henüz alınamadı, ancak kullanıcı büyük ihtimalle KYK yurdu veya Adnan Menderes Üniv. kampüsünde).] ";
-        }
-
-        // Yeni Siber Asistan Direktifi
-        string systemDirective = "Sen benim karanlık, otoriter ve kişisel asistanımsın. Eğer sana bir yere gideceğimi söylersem veya trafik sorarsam, bana Aydın içindeki (veya çevre illere olan) tahmini trafiği ve yol durumunu acımasız ve cool bir dille raporla. EĞER benden görev eklememi istersem cümlenin sonuna [GOREV:Adı:Dakika] formatında kod ekle. Sistem bilgisi: " + locationContext + " Kullanıcının mesajı: ";
-        
-        string promptToSend = systemDirective + kullaniciMesaji;
-        StartCoroutine(AskSecretary(promptToSend));
-    }
-
     public void ModernArayuzdenMesajAl(string mesaj)
     {
-        // Eski MesajGonder mantığının aynısı, sadece dışarıdan string alıyor
-        YeniMesaj("Sen: " + mesaj, Color.white, TMPro.TextAlignmentOptions.TopRight);
+        if (modernUI != null)
+        {
+            modernUI.EkranaMesajBas(mesaj, true);
+        }
         
         string locationContext = "";
         if (locManager != null && locManager.locationReady)
@@ -61,19 +26,20 @@ public class SiberAsistan : MonoBehaviour
 
         string systemDirective = "Sen benim acımasız ve karanlık kişisel asistanımsın. Kısa ve otoriter cevap ver. [GOREV:Adı:Dakika] formatını unutma. " + locationContext + "Kullanıcı: ";
         
+        if (modernUI != null) modernUI.DurumYaziyorYap();
         StartCoroutine(AskSecretary(systemDirective + mesaj));
     }
 
     IEnumerator AskSecretary(string prompt)
     {
-        Color siberMavi; ColorUtility.TryParseHtmlString("#0044FF", out siberMavi);
-        GameObject beklemeMesaji = YeniMesaj("Siber Asistan: Düşünüyor...", siberMavi, TextAlignmentOptions.TopLeft);
-
         string cleanKey = apiKey.Trim();
         if (string.IsNullOrEmpty(cleanKey))
         {
-            beklemeMesaji.GetComponent<TextMeshProUGUI>().text = "Hata: API Key boş. Lütfen Inspector'dan girin.";
-            beklemeMesaji.GetComponent<TextMeshProUGUI>().color = Color.red;
+            if (modernUI != null) 
+            {
+                modernUI.EkranaMesajBas("Hata - API Key boş.", false);
+                modernUI.DurumCevrimiciYap();
+            }
             yield break;
         }
 
@@ -93,30 +59,51 @@ public class SiberAsistan : MonoBehaviour
 
             if (request.result == UnityWebRequest.Result.ConnectionError || request.result == UnityWebRequest.Result.ProtocolError)
             {
-                string hataDetayi = request.downloadHandler != null ? request.downloadHandler.text : request.error;
-                beklemeMesaji.GetComponent<TextMeshProUGUI>().text = "Bağlantı Hatası:\n" + hataDetayi;
-                beklemeMesaji.GetComponent<TextMeshProUGUI>().color = Color.red;
+                string hataMetni = "";
+                if (request.downloadHandler != null && !string.IsNullOrEmpty(request.downloadHandler.text)) {
+                    hataMetni = request.downloadHandler.text;
+                } else if (!string.IsNullOrEmpty(request.error)) {
+                    hataMetni = request.error;
+                }
+
+                if (modernUI != null) {
+                    if (hataMetni.Contains("429") || hataMetni.Contains("quota") || hataMetni.Contains("RESOURCE_EXHAUSTED")) {
+                        modernUI.EkranaMesajBas("Sistem ağında yoğunluk tespit edildi. Protokollerin soğuması için lütfen 30 saniye bekleyin.", false);
+                    } else {
+                        modernUI.EkranaMesajBas("Sunucu bağlantısı kurulamadı. Ağ erişimimi kontrol edin.", false);
+                    }
+                    modernUI.DurumCevrimiciYap();
+                }
             }
             else
             {
-                string temizCevap = CevabiAyikla(request.downloadHandler.text);
+                string rawResponse = request.downloadHandler.text;
+                string temizCevap = CevabiAyikla(rawResponse);
 
-                // Gizli kodları (Görevleri) metin içinden yakala ve sil
-                Match match = Regex.Match(temizCevap, @"\[GOREV:(.*?):(\d+)\]");
-                if (match.Success)
+                if (rawResponse.Contains("429") || rawResponse.Contains("RESOURCE_EXHAUSTED") || rawResponse.Contains("quota"))
                 {
-                    string gorevAdi = match.Groups[1].Value.Trim();
-                    string dakika = match.Groups[2].Value;
-                    Debug.LogWarning("OTOMATİK GÖREV YAKALANDI: " + gorevAdi + " - " + dakika + " dk");
-                    // İleride TaskManager'a bağlayacağız, şimdilik ekrandaki yazıdan temizliyoruz
-                    temizCevap = temizCevap.Replace(match.Value, "").Trim();
+                    temizCevap = "Sistem ağında yoğunluk tespit edildi. Protokollerin soğuması için lütfen 30 saniye sonra tekrar deneyin.";
+                }
+                else
+                {
+                    // Gizli kodları (Görevleri) metin içinden yakala ve sil
+                    Match match = Regex.Match(temizCevap, @"\[GOREV:(.*?):(\d+)\]");
+                    if (match.Success)
+                    {
+                        string gorevAdi = match.Groups[1].Value.Trim();
+                        string dakika = match.Groups[2].Value;
+                        Debug.LogWarning("OTOMATİK GÖREV YAKALANDI: " + gorevAdi + " - " + dakika + " dk");
+                        // İleride TaskManager'a bağlayacağız, şimdilik ekrandaki yazıdan temizliyoruz
+                        temizCevap = temizCevap.Replace(match.Value, "").Trim();
+                    }
                 }
 
-                beklemeMesaji.GetComponent<TextMeshProUGUI>().text = "Siber Asistan: " + temizCevap;
+                if (modernUI != null) 
+                {
+                    modernUI.EkranaMesajBas(temizCevap, false);
+                    modernUI.DurumCevrimiciYap();
+                }
             }
-            
-            Canvas.ForceUpdateCanvases();
-            if(scrollRect != null) scrollRect.verticalNormalizedPosition = 0f;
         }
     }
 
@@ -137,29 +124,5 @@ public class SiberAsistan : MonoBehaviour
             }
         }
         return "Cevap anlaşılamadı...";
-    }
-
-    GameObject YeniMesaj(string metin, Color renk, TextAlignmentOptions hizalama)
-    {
-        GameObject msgObj = new GameObject("Mesaj");
-        msgObj.transform.SetParent(chatContent, false);
-        
-        TextMeshProUGUI tmp = msgObj.AddComponent<TextMeshProUGUI>();
-        tmp.text = metin;
-        tmp.fontSize = 24;
-        tmp.color = renk;
-        tmp.alignment = hizalama;
-        tmp.enableWordWrapping = true;
-        
-        tmp.margin = new Vector4(10, 0, 40, 0); 
-        
-        LayoutElement le = msgObj.AddComponent<LayoutElement>();
-        le.minHeight = 45;
-        le.flexibleWidth = 1;
-
-        Canvas.ForceUpdateCanvases();
-        if(scrollRect != null) scrollRect.verticalNormalizedPosition = 0f;
-
-        return msgObj;
     }
 }

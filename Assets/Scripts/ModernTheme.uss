@@ -1,29 +1,190 @@
 VisualElement {}
-/* Figma'daki o yumuşak köşeli, premium mavi buton */
-.premium-buton {
-    background-color: #007AFF; /* Apple Mavisi */
-    color: #FFFFFF; /* Beyaz Yazı */
-    font-size: 18px;
-    -unity-font-style: bold;
-    border-radius: 30px; /* SİHİR BURADA: Köşeleri pürüzsüz yuvarlar */
-    border-width: 0;
-    padding-top: 15px;
-    padding-bottom: 15px;
-    padding-left: 30px;
-    padding-right: 30px;
-    transition-duration: 0.2s; /* Üzerine gelince animasyon için */
-}
-
-/* Mouse ile üzerine gelince (Hover) efekti */
-.premium-buton:hover {
-    background-color: #005BB5;
-    scale: 1.05; /* Hafifçe büyür */
-}
 
 /* O arkadaki beyaz/gri yumuşak kart paneli */
 .modern-kart {
-    background-color: #FFFFFF;
+    background-color: #030712;
     border-radius: 20px;
     padding: 20px;
     margin: 10px;
+}
+
+/* Modern Karanlık Tepe Barı */
+.top-bar {
+    height: 60px;
+    background-color: #111827; /* Modern koyu antrasit */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-bottom-width: 1px;
+    border-bottom-color: #1F2937; /* Zarif, koyu alt çizgi */
+    flex-shrink: 0;
+}
+
+.header-title {
+    color: #F9FAFB; /* Kirli beyaz/Açık gri */
+    font-size: 17px;
+    -unity-font-style: bold;
+}
+
+.header-status {
+    color: #10B981; /* Modern aktif yeşili */
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+/* Sohbet ekranı derin koyu arka plan */
+.chat-ekrani {
+    flex-grow: 1;
+    flex-shrink: 1;
+    padding: 20px;
+    background-color: #030712; /* OLED dostu çok derin lacivert/siyah */
+}
+
+/* Alt bar koyu tema ve flex yerleşimi */
+.bottom-bar {
+    background-color: #030712;
+    padding-top: 10px;
+    padding-bottom: 20px;
+    padding-left: 20px;
+    padding-right: 20px;
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    width: 100%;
+}
+
+/* Dış taşıyıcıyı tamamen görünmez yapıp sadece sınırları belirliyoruz */
+.premium-input {
+    width: 0;
+    flex-grow: 1;
+    flex-shrink: 1;
+    height: 50px;
+    margin-right: 15px;
+    background-color: transparent; /* DIŞ KUTU TAMAMEN ŞEFFAF */
+    border-width: 0;
+}
+
+/* Unity'nin içindeki o inatçı beyaz kutuyu hedef alıp Dark Mode baloncuğuna çeviriyoruz */
+.premium-input > .unity-text-field__input {
+    background-color: #1F2937; /* Koyu gri şık arka plan */
+    color: #FFFFFF; /* Okunabilir bembeyaz yazı */
+    --unity-cursor-color: #007AFF; /* Göz yormayan, premium Apple Mavisi imleç */
+    border-width: 0;
+    border-radius: 25px; /* Kusursuz yuvarlak hatlar */
+    padding-left: 20px;
+    padding-right: 20px;
+    font-size: 16px;
+    -unity-text-align: middle-left;
+}
+
+/* Kullanıcı yazı yazmak için tıkladığında şık bir mavi parlama efekti */
+.premium-input > .unity-text-field__input:focus {
+    border-width: 1px;
+    border-color: #007AFF; 
+}
+
+/* İlet butonu (Sabit Genişlik) */
+.premium-buton {
+    width: 100px;
+    height: 50px;
+    flex-shrink: 0; /* Asla ezilmez */
+    border-radius: 25px;
+    background-color: #007AFF; /* Apple Mavisi */
+    color: #FFFFFF;
+    font-size: 16px;
+    -unity-font-style: bold;
+    border-width: 0;
+    transition-duration: 0.2s;
+}
+
+.premium-buton:hover {
+    background-color: #005BB5;
+    scale: 1.05;
+}
+
+/* Kaydırma çubuğu genel alanı */
+.chat-ekrani .unity-scroller--vertical {
+    width: 6px;
+    background-color: transparent;
+    border-width: 0;
+    margin-right: 2px;
+}
+
+/* Üst ve alt ok tuşlarını tamamen gizle */
+.chat-ekrani .unity-scroller__low-button,
+.chat-ekrani .unity-scroller__high-button {
+    display: none;
+}
+
+/* Kaydırma alanının arkasındaki yol (Track) */
+.chat-ekrani .unity-base-slider__tracker {
+    background-color: transparent;
+    border-width: 0;
+}
+
+/* Tutanak / Kaydırıcı (Dragger) - Yarı şeffaf, ince ve yuvarlak */
+.chat-ekrani .unity-base-slider__dragger {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+    border-width: 0;
+    width: 6px;
+    left: 0;
+}
+
+.chat-ekrani .unity-base-slider__dragger:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* MULTI-PAGE DASHBOARD SINIFLARI */
+.main-container {
+    flex-grow: 1;
+}
+
+.page {
+    flex-grow: 1;
+    display: none;
+}
+
+.tab-bar {
+    height: 60px;
+    flex-direction: row;
+    background-color: #111827;
+    border-top-width: 1px;
+    border-top-color: #1F2937;
+    justify-content: space-around;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.tab-button {
+    background-color: transparent;
+    border-width: 0;
+    color: #9CA3AF;
+    font-size: 16px;
+    -unity-font-style: bold;
+    flex-grow: 1;
+    height: 100%;
+    border-radius: 0;
+}
+
+.tab-button:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #D1D5DB;
+}
+
+.tab-button-active {
+    color: #007AFF;
+    border-top-width: 3px;
+    border-top-color: #007AFF;
+    background-color: rgba(0, 122, 255, 0.05);
+}
+
+.task-card {
+    background-color: #1F2937;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-left-width: 4px;
+    border-left-color: #10B981;
+    color: white;
 }
