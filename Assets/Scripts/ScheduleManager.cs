@@ -59,7 +59,8 @@ public class ScheduleManager : MonoBehaviour
 
     private void Update()
     {
-        // Yeni Input System ile boşluk tuşu kontrolü
+        // Yeni Input System ile boşluk tuşu kontrolü (Sistemi yormamak için geçici olarak kapatıldı)
+        /*
         if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
         {
             Debug.Log("[ScheduleManager] Boşluk tuşuna basıldı! 30 dakika gecikme (trafik) simüle ediliyor...");
@@ -69,6 +70,7 @@ public class ScheduleManager : MonoBehaviour
             Debug.Log("--- Güncel Görev Durumu ---");
             PrintTasks();
         }
+        */
     }
 
     /// <summary>
@@ -168,7 +170,7 @@ public class ScheduleManager : MonoBehaviour
         }
     }
 
-    public void AddTask(string taskName, int duration, bool isStrict)
+    public void AddTask(string taskName, int duration, bool isStrict = false)
     {
         Task newTask = new Task(taskName, duration, isStrict);
         tasks.Add(newTask);
@@ -193,7 +195,7 @@ public class ScheduleManager : MonoBehaviour
         string json = JsonUtility.ToJson(wrapper);
         PlayerPrefs.SetString("SavedTasks", json);
         PlayerPrefs.Save();
-        Debug.Log("[ScheduleManager] Görevler kaydedildi.");
+        // Debug.Log("[ScheduleManager] Görevler kaydedildi.");
     }
 
     public void LoadTasks()

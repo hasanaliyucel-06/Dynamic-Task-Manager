@@ -1,48 +1,45 @@
-VisualElement {}
+VisualElement {
+}
 
-/* O arkadaki beyaz/gri yumuşak kart paneli */
 .modern-kart {
-    background-color: #030712;
+    background-color: rgb(3, 7, 18);
     border-radius: 20px;
     padding: 20px;
     margin: 10px;
 }
 
-/* Modern Karanlık Tepe Barı */
 .top-bar {
     height: 60px;
-    background-color: #111827; /* Modern koyu antrasit */
+    background-color: rgb(17, 24, 39);
     flex-direction: column;
     justify-content: center;
     align-items: center;
     border-bottom-width: 1px;
-    border-bottom-color: #1F2937; /* Zarif, koyu alt çizgi */
+    border-bottom-color: rgb(31, 41, 55);
     flex-shrink: 0;
 }
 
 .header-title {
-    color: #F9FAFB; /* Kirli beyaz/Açık gri */
+    color: rgb(249, 250, 251);
     font-size: 17px;
     -unity-font-style: bold;
 }
 
 .header-status {
-    color: #10B981; /* Modern aktif yeşili */
+    color: rgb(16, 185, 129);
     font-size: 12px;
     margin-top: 2px;
 }
 
-/* Sohbet ekranı derin koyu arka plan */
 .chat-ekrani {
     flex-grow: 1;
     flex-shrink: 1;
     padding: 20px;
-    background-color: #030712; /* OLED dostu çok derin lacivert/siyah */
+    background-color: rgb(3, 7, 18);
 }
 
-/* Alt bar koyu tema ve flex yerleşimi */
 .bottom-bar {
-    background-color: #030712;
+    background-color: rgb(3, 7, 18);
     padding-top: 10px;
     padding-bottom: 20px;
     padding-left: 20px;
@@ -53,44 +50,40 @@ VisualElement {}
     width: 100%;
 }
 
-/* Dış taşıyıcıyı tamamen görünmez yapıp sadece sınırları belirliyoruz */
 .premium-input {
     width: 0;
     flex-grow: 1;
     flex-shrink: 1;
     height: 50px;
     margin-right: 15px;
-    background-color: transparent; /* DIŞ KUTU TAMAMEN ŞEFFAF */
+    background-color: transparent;
     border-width: 0;
 }
 
-/* Unity'nin içindeki o inatçı beyaz kutuyu hedef alıp Dark Mode baloncuğuna çeviriyoruz */
 .premium-input > .unity-text-field__input {
-    background-color: #1F2937; /* Koyu gri şık arka plan */
-    color: #FFFFFF; /* Okunabilir bembeyaz yazı */
-    --unity-cursor-color: #007AFF; /* Göz yormayan, premium Apple Mavisi imleç */
+    background-color: rgb(31, 41, 55);
+    color: rgb(255, 255, 255);
+    --unity-cursor-color: rgb(0, 122, 255);
     border-width: 0;
-    border-radius: 25px; /* Kusursuz yuvarlak hatlar */
+    border-radius: 25px;
     padding-left: 20px;
     padding-right: 20px;
     font-size: 16px;
     -unity-text-align: middle-left;
 }
 
-/* Kullanıcı yazı yazmak için tıkladığında şık bir mavi parlama efekti */
 .premium-input > .unity-text-field__input:focus {
     border-width: 1px;
-    border-color: #007AFF; 
+    border-color: rgb(0, 122, 255);
 }
 
-/* İlet butonu (Sabit Genişlik) */
 .premium-buton {
     width: 100px;
     height: 50px;
-    flex-shrink: 0; /* Asla ezilmez */
+    flex-shrink: 0;
     border-radius: 25px;
-    background-color: #007AFF; /* Apple Mavisi */
-    color: #FFFFFF;
+    background-color: rgb(0, 122, 255);
+    color: rgb(255, 255, 255);
     font-size: 16px;
     -unity-font-style: bold;
     border-width: 0;
@@ -98,11 +91,10 @@ VisualElement {}
 }
 
 .premium-buton:hover {
-    background-color: #005BB5;
+    background-color: rgb(0, 91, 181);
     scale: 1.05;
 }
 
-/* Kaydırma çubuğu genel alanı */
 .chat-ekrani .unity-scroller--vertical {
     width: 6px;
     background-color: transparent;
@@ -110,19 +102,16 @@ VisualElement {}
     margin-right: 2px;
 }
 
-/* Üst ve alt ok tuşlarını tamamen gizle */
 .chat-ekrani .unity-scroller__low-button,
 .chat-ekrani .unity-scroller__high-button {
     display: none;
 }
 
-/* Kaydırma alanının arkasındaki yol (Track) */
 .chat-ekrani .unity-base-slider__tracker {
     background-color: transparent;
     border-width: 0;
 }
 
-/* Tutanak / Kaydırıcı (Dragger) - Yarı şeffaf, ince ve yuvarlak */
 .chat-ekrani .unity-base-slider__dragger {
     background-color: rgba(255, 255, 255, 0.15);
     border-radius: 3px;
@@ -135,7 +124,6 @@ VisualElement {}
     background-color: rgba(255, 255, 255, 0.3);
 }
 
-/* MULTI-PAGE DASHBOARD SINIFLARI */
 .main-container {
     flex-grow: 1;
 }
@@ -148,9 +136,9 @@ VisualElement {}
 .tab-bar {
     height: 60px;
     flex-direction: row;
-    background-color: #111827;
+    background-color: rgb(17, 24, 39);
     border-top-width: 1px;
-    border-top-color: #1F2937;
+    border-top-color: rgb(31, 41, 55);
     justify-content: space-around;
     align-items: center;
     flex-shrink: 0;
@@ -159,32 +147,52 @@ VisualElement {}
 .tab-button {
     background-color: transparent;
     border-width: 0;
-    color: #9CA3AF;
+    color: rgb(156, 163, 175);
     font-size: 16px;
     -unity-font-style: bold;
     flex-grow: 1;
     height: 100%;
     border-radius: 0;
+    background-image: none;
+    -unity-background-scale-mode: scale-to-fit;
 }
 
 .tab-button:hover {
     background-color: rgba(255, 255, 255, 0.05);
-    color: #D1D5DB;
+    color: rgb(209, 213, 219);
 }
 
 .tab-button-active {
-    color: #007AFF;
+    color: rgb(0, 122, 255);
     border-top-width: 3px;
-    border-top-color: #007AFF;
+    border-top-color: rgb(0, 122, 255);
     background-color: rgba(0, 122, 255, 0.05);
 }
 
 .task-card {
-    background-color: #1F2937;
+    background-color: rgb(31, 41, 55);
     border-radius: 12px;
     padding: 15px;
     margin-bottom: 15px;
     border-left-width: 4px;
-    border-left-color: #10B981;
+    border-left-color: rgb(16, 185, 129);
     color: white;
+}
+
+.modern-progress {
+    height: 8px;
+    margin-left: 20px;
+    margin-right: 20px;
+}
+
+.modern-progress .unity-progress-bar__background {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    border-width: 0;
+}
+
+.modern-progress .unity-progress-bar__progress {
+    background-color: rgb(0, 255, 128);
+    border-radius: 4px;
+    margin: 0;
 }

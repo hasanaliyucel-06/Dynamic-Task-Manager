@@ -24,7 +24,7 @@ public class SiberAsistan : MonoBehaviour
         if (locManager != null && locManager.locationReady)
             locationContext = $"[Şu anki konumum: Enlem {locManager.latitude}, Boylam {locManager.longitude}. Aydın.] ";
 
-        string systemDirective = "Sen benim acımasız ve karanlık kişisel asistanımsın. Kısa ve otoriter cevap ver. KULLANICI SENDEN BİR GÖREV OLUŞTURMANI İSTERSE VEYA BİR EYLEMİ ONAYLARSAN, cevabının en sonuna MUTLAKA şu formatta bir görev etiketi ekle: [GOREV:Görev Adı:Süre]. Süre kısmı SADECE DAKİKA CİNSİNDEN TAM SAYI olmalıdır (Örn: 30, 45, 60). Asla metin, boşluk veya soru işareti (?) kullanma. Eğer kullanıcı bir süre belirtmediyse varsayılan olarak 30 yaz. " + locationContext + "Kullanıcı: ";
+        string systemDirective = "Sen kullanıcının (Patron) kişisel siber asistanısın. Üslubun son derece profesyonel, soğukkanlı, net ve saygılı olmalıdır. Fazla dramatik, fantastik veya abartılı (karanlık, gölgeler vb.) kelimeler KULLANMA. Kısa ve öz cevaplar ver. KURAL: Eğer kullanıcı senden bir görevi listeye eklemeni veya planlamanı isterse, cevabının EN SONUNA sadece şu formatı ekle: [GOREV:Görev Adı:SÜRE]. SÜRE sadece rakam olmalıdır. Örnek: [GOREV:C# Pratiği:45]. " + locationContext + "Patron: ";
         
         if (modernUI != null) modernUI.DurumYaziyorYap();
         StartCoroutine(AskSecretary(systemDirective + mesaj));
@@ -98,7 +98,7 @@ public class SiberAsistan : MonoBehaviour
                         
                         PageNavigator nav = FindFirstObjectByType<PageNavigator>();
                         if (nav != null) {
-                            nav.GorevKartiEkle(gorevAdi, dakika, false); // Katı durumu varsa boolean'ı true yap.
+                            nav.GorevKartiEkle(gorevAdi, dakika, false);
                         }
 
                         // İleride TaskManager'a bağlayacağız, şimdilik ekrandaki yazıdan temizliyoruz
@@ -111,6 +111,45 @@ public class SiberAsistan : MonoBehaviour
                     modernUI.EkranaMesajBas(temizCevap, false);
                     modernUI.DurumCevrimiciYap();
                 }
+            }
+        }
+    }
+
+    public void GizliSorguYap(string prompt, System.Action<string> callback)
+    {
+        StartCoroutine(GizliSorguCoroutine(prompt, callback));
+    }
+
+    IEnumerator GizliSorguCoroutine(string prompt, System.Action<string> callback)
+    {
+        string cleanKey = apiKey.Trim();
+        if (string.IsNullOrEmpty(cleanKey))
+        {
+            callback?.Invoke("Hata: API Key boş.");
+            yield break;
+        }
+
+        string jsonData = "{\"contents\":[{\"parts\":[{\"text\":\"" + prompt + "\"}]}]}";
+
+        using (UnityWebRequest request = new UnityWebRequest(apiUrl, "POST"))
+        {
+            byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonData);
+            request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            request.downloadHandler = new DownloadHandlerBuffer();
+            request.SetRequestHeader("Content-Type", "application/json");
+            request.SetRequestHeader("x-goog-api-key", cleanKey);
+
+            yield return request.SendWebRequest();
+
+            if (request.result == UnityWebRequest.Result.ConnectionError || request.result == UnityWebRequest.Result.ProtocolError)
+            {
+                callback?.Invoke("Hata: " + request.error);
+            }
+            else
+            {
+                string rawResponse = request.downloadHandler.text;
+                string temizCevap = CevabiAyikla(rawResponse);
+                callback?.Invoke(temizCevap);
             }
         }
     }

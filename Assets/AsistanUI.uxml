@@ -1,40 +1,90 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
     <Style src="project://database/Assets/Scripts/ModernTheme.uss?fileID=7433441132597879392&amp;guid=15056cd9b967be844ad7112af93a890b&amp;type=3#ModernTheme"/>
-    
     <ui:VisualElement class="main-container" style="flex-grow: 1;">
-        
-        <!-- SOHBET SAYFASI -->
         <ui:VisualElement name="Page_Sohbet" class="page" style="display: flex;">
             <ui:VisualElement name="UstBar" class="top-bar">
-                <ui:Label text="SİBER ASİSTAN" class="header-title" />
-                <ui:Label text="Çevrimiçi" class="header-status" />
+                <ui:Label text="SİBER ASİSTAN" class="header-title"/>
+                <ui:Label text="Çevrimiçi" class="header-status"/>
             </ui:VisualElement>
-            <ui:ScrollView name="scrollSohbet" class="chat-ekrani" />
-            <ui:VisualElement name="AltKutu" class="bottom-bar">
-                <ui:TextField placeholder-text="Asistana emret..." name="txtMesaj" class="premium-input"/>
-                <ui:Button text="İLET" name="btnGonder" enable-rich-text="true" class="premium-buton"/>
+            <ui:ScrollView name="scrollSohbet" class="chat-ekrani"/>
+            <ui:VisualElement name="AltKutu" class="bottom-bar" style="flex-direction: row; align-items: center;">
+                <ui:TextField placeholder-text="Asistana emret..." name="txtMesaj" class="premium-input" style="flex-grow: 1; margin-right: 8px;"/>
+                <ui:Button text="↑" name="btnGonder" enable-rich-text="true" class="premium-buton" style="width: 45px; height: 45px; border-radius: 25px; font-size: 24px; -unity-text-align: middle-center; padding: 0; margin: 0;"/>
             </ui:VisualElement>
         </ui:VisualElement>
-
-        <!-- GÖREVLER SAYFASI -->
         <ui:VisualElement name="Page_Gorevler" class="page" style="display: none;">
             <ui:VisualElement class="top-bar">
-                <ui:Label text="GÖREV YÖNETİMİ" class="header-title" />
-                <ui:Label text="2 Aktif Görev" class="header-status" style="color: #60A5FA;" />
+                <ui:Label text="GÖREV YÖNETİMİ" class="header-title"/>
+                <ui:Label text="0 Aktif Görev" class="header-status" style="color: rgb(96, 165, 250);"/>
             </ui:VisualElement>
-            <ui:ScrollView name="GorevScrollView" class="chat-ekrani" />
-            <ui:VisualElement class="bottom-bar">
-                <ui:TextField placeholder-text="Yeni görev ekle..." name="Input_YeniGorev" class="premium-input"/>
-                <ui:Button text="EKLE" name="Btn_GorevEkle" enable-rich-text="true" class="premium-buton"/>
+            <ui:ScrollView name="gorevlerScrollView" class="chat-ekrani" style="flex-grow: 1;" />
+            <ui:VisualElement class="bottom-bar" style="flex-direction: row; align-items: center;">
+                <ui:TextField placeholder-text="Yeni görev ekle..." name="Input_YeniGorev" class="premium-input" style="flex-grow: 3; flex-shrink: 1; margin-right: 8px;"/>
+                <ui:TextField placeholder-text="Dk" name="GorevSureInput" class="premium-input" style="flex-grow: 1; flex-shrink: 1; margin-right: 8px;"/>
+                <ui:Button text="↑" name="Btn_GorevEkle" enable-rich-text="true" class="premium-buton" style="width: 45px; height: 45px; border-radius: 25px; font-size: 24px; -unity-text-align: middle-center; padding: 0; margin: 0;"/>
             </ui:VisualElement>
         </ui:VisualElement>
+        <ui:VisualElement name="pageDisiplin" class="page" style="display: none;">
+            <ui:VisualElement class="top-bar" style="flex-direction: column; align-items: stretch; padding-top: 40px; padding-bottom: 10px;">
+                <ui:Label text="AKILLI HEDEFLER VE TAKVİM" style="color: white; -unity-font-style: bold; font-size: 20px; -unity-text-align: middle-center; margin-bottom: 10px;"/>
+                <ui:ProgressBar name="rutinProgressBar" value="50" class="modern-progress" />
+            </ui:VisualElement>
 
+            <!-- Akıllı Hedef Paneli -->
+            <ui:VisualElement style="background-color: #2a3441; border-radius: 12px; padding: 10px; margin: 25px 15px 5px 15px; flex-direction: column;">
+                <ui:TextField name="inputHedef" placeholder-text="Hedefin nedir? (Örn: Suç ve Ceza'yı bitir)" class="premium-input" style="width: 100%; margin-bottom: 0;" />
+                
+                <ui:VisualElement style="flex-direction: row; margin-top: 10px; margin-bottom: 10px;">
+                    <ui:Button name="btnBaslangic" text="Başlangıç: (Bugün)" class="premium-buton" style="flex-grow: 1; padding: 10px; margin-right: 5px; background-color: #4B5563; border-radius: 8px; color: white; -unity-font-style: bold;" />
+                    <ui:Button name="btnBitis" text="Bitiş: Seçilmedi" class="premium-buton" style="flex-grow: 1; padding: 10px; background-color: #4B5563; border-radius: 8px; color: white; -unity-font-style: bold;" />
+                </ui:VisualElement>
+
+                <ui:Button name="btnAiPlanla" text="YAPAY ZEKAYA PLANLAT" class="premium-buton" style="width: 100%; padding: 10px; -unity-font-style: bold; -unity-text-align: middle-center; background-color: #005BB5; border-radius: 8px;" />
+            </ui:VisualElement>
+
+            <ui:ScrollView name="rutinScrollArea" style="flex-grow: 1; padding: 10px 15px 15px 15px;">
+                
+                <!-- Rutin Kartı Taslağı 1 (Tamamlanmış) -->
+                <ui:VisualElement style="background-color: #1c2331; border-radius: 10px; flex-direction: row; align-items: center; justify-content: space-between; padding: 15px; margin-bottom: 10px;">
+                    <ui:VisualElement style="flex-direction: column;">
+                        <ui:Label text="Gitar Pratiği" style="color: white; font-size: 16px; -unity-font-style: bold; padding: 0; margin: 0;"/>
+                        <ui:Label text="🔥 5 Günlük Seri" style="color: #9CA3AF; font-size: 12px; margin-top: 4px; padding: 0;"/>
+                    </ui:VisualElement>
+                    <ui:Button text="✓" style="width: 32px; height: 32px; border-radius: 16px; background-color: #22c55e; color: white; font-size: 18px; -unity-font-style: bold; -unity-text-align: middle-center; border-width: 0; padding: 0; margin: 0;"/>
+                </ui:VisualElement>
+
+                <!-- Rutin Kartı Taslağı 2 (Tamamlanmamış) -->
+                <ui:VisualElement style="background-color: #1c2331; border-radius: 10px; flex-direction: row; align-items: center; justify-content: space-between; padding: 15px; margin-bottom: 10px;">
+                    <ui:VisualElement style="flex-direction: column;">
+                        <ui:Label text="Vücut Geliştirme" style="color: white; font-size: 16px; -unity-font-style: bold; padding: 0; margin: 0;"/>
+                        <ui:Label text="🔥 12 Günlük Seri" style="color: #9CA3AF; font-size: 12px; margin-top: 4px; padding: 0;"/>
+                    </ui:VisualElement>
+                    <ui:Button text="" style="width: 32px; height: 32px; border-radius: 16px; background-color: transparent; border-color: #4B5563; border-width: 2px; padding: 0; margin: 0;"/>
+                </ui:VisualElement>
+
+            </ui:ScrollView>
+        </ui:VisualElement>
+        <ui:VisualElement name="pageSistem" class="page" style="display: none;">
+            <ui:VisualElement class="top-bar">
+                <ui:Label text="SİSTEM" class="header-title"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
     </ui:VisualElement>
-
-    <!-- TAB BAR (SABİT ALT MENÜ) -->
-    <ui:VisualElement name="TabBar" class="tab-bar">
-        <ui:Button text="Sohbet" name="Btn_TabSohbet" class="tab-button tab-button-active" />
-        <ui:Button text="Görevler" name="Btn_TabGorevler" class="tab-button" />
+    <ui:VisualElement name="TabBar" class="tab-bar" style="background-color: transparent; border-width: 0; justify-content: space-around; flex-direction: row;">
+        <ui:Button text="" name="Btn_TabSohbet" class="tab-button tab-button-active" style="background-color: transparent; border-width: 0; width: 35px; height: 35px; -unity-background-scale-mode: scale-to-fit; background-image: url(&quot;project://database/Assets/Icons/ai.png?fileID=2800000&amp;guid=27f7a582bb31c88418810874ac0d1ea8&amp;type=3#ai&quot;);"/>
+        <ui:Button text="" name="Btn_TabGorevler" class="tab-button" style="background-color: transparent; border-width: 0; width: 35px; height: 35px; -unity-background-scale-mode: scale-to-fit; background-image: url(&quot;project://database/Assets/Icons/tasks.png?fileID=2800000&amp;guid=ac353ab2e97baf949970c680608234aa&amp;type=3#tasks&quot;);"/>
+        <ui:Button text="" name="btnDisiplin" class="tab-button" style="background-color: transparent; border-width: 0; width: 35px; height: 35px; -unity-background-scale-mode: scale-to-fit; background-image: url(&quot;project://database/Assets/Icons/calendar.png?fileID=2800000&amp;guid=dea395e21aa5de94c8baa0eeebe23bf9&amp;type=3#calendar&quot;);"/>
+        <ui:Button text="" name="btnSistem" class="tab-button" style="background-color: transparent; border-width: 0; width: 35px; height: 35px; -unity-background-scale-mode: scale-to-fit; background-image: url(&quot;project://database/Assets/Icons/dashboard.png?fileID=2800000&amp;guid=afc942f2d93568f40b9361beb737a07c&amp;type=3#dashboard&quot;);"/>
     </ui:VisualElement>
-
+    <ui:VisualElement name="takvimPenceresi" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center;">
+        <ui:VisualElement style="background-color: #1c2331; border-radius: 12px; padding: 20px; width: 300px; flex-direction: column;">
+            <ui:VisualElement style="flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <ui:Button name="btnTakvimOnceki" text="&lt;" style="background-color: transparent; color: white; border-width: 0; font-size: 18px; -unity-font-style: bold;" />
+                <ui:Label name="lblTakvimAyYil" text="Ay Yıl" style="color: white; -unity-font-style: bold; font-size: 18px; -unity-text-align: middle-center;" />
+                <ui:Button name="btnTakvimSonraki" text="&gt;" style="background-color: transparent; color: white; border-width: 0; font-size: 18px; -unity-font-style: bold;" />
+            </ui:VisualElement>
+            <ui:VisualElement name="takvimGunler" style="flex-direction: row; flex-wrap: wrap; justify-content: flex-start;" />
+            <ui:Button name="btnTakvimKapat" text="Kapat" style="margin-top: 15px; background-color: #ef4444; color: white; border-radius: 8px; padding: 8px; -unity-font-style: bold;" />
+        </ui:VisualElement>
+    </ui:VisualElement>
 </ui:UXML>
