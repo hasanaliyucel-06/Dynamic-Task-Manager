@@ -9,6 +9,7 @@ public class ModernAsistanBaglantisi : MonoBehaviour
     private TextField mesajGirdisi;
     private ScrollView scrollSohbet;
     private Label lblStatus;
+    private VisualElement inputContainer;
 
     public SiberAsistan siberAsistan; 
 
@@ -23,11 +24,27 @@ public class ModernAsistanBaglantisi : MonoBehaviour
         mesajGirdisi = root.Q<TextField>("txtMesaj");
         scrollSohbet = root.Q<ScrollView>("scrollSohbet");
         lblStatus = root.Q<Label>(className: "header-status");
+        inputContainer = root.Q<VisualElement>(className: "bottom-bar");
 
         if (gonderButonu != null)
         {
             gonderButonu.clicked -= MesajGonderildi;
             gonderButonu.clicked += MesajGonderildi;
+        }
+    }
+
+    void Update()
+    {
+        if (inputContainer == null) return;
+
+        if (TouchScreenKeyboard.visible)
+        {
+            float keyboardHeight = TouchScreenKeyboard.area.height;
+            inputContainer.style.marginBottom = keyboardHeight;
+        }
+        else
+        {
+            inputContainer.style.marginBottom = 0;
         }
     }
 
