@@ -4564,19 +4564,27 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScheduleManager
   tasks:
-  - taskName: Programlama Dersi
+  - taskDate: 
+    taskTime: 
+    taskName: Programlama Dersi
     durationMinutes: 120
     isStrictBlock: 1
     isCompleted: 0
-  - taskName: "Elektro Gitar Prati\u011Fi"
+  - taskDate: 
+    taskTime: 
+    taskName: "Elektro Gitar Prati\u011Fi"
     durationMinutes: 60
     isStrictBlock: 0
     isCompleted: 0
-  - taskName: Yemek
+  - taskDate: 
+    taskTime: 
+    taskName: Yemek
     durationMinutes: 45
     isStrictBlock: 1
     isCompleted: 0
-  - taskName: Fitness
+  - taskDate: 
+    taskTime: 
+    taskName: Fitness
     durationMinutes: 90
     isStrictBlock: 0
     isCompleted: 0

@@ -69,7 +69,7 @@ public class UIManager : MonoBehaviour
         {
             if (scheduleManager != null)
             {
-                scheduleManager.AddTask(name, duration, false); // şimdilik esnek (isStrict = false)
+                scheduleManager.AddTask(System.DateTime.Now.ToString("dd.MM.yyyy"), "--:--", name, duration, false); // şimdilik esnek (isStrict = false)
             }
             else
             {
@@ -99,7 +99,7 @@ public class UIManager : MonoBehaviour
         if (scheduleManager != null)
         {
             // Görevi şimdilik esnek (false) olarak ekliyoruz
-            scheduleManager.AddTask(taskName, duration, false);
+            scheduleManager.AddTask(System.DateTime.Now.ToString("dd.MM.yyyy"), "--:--", taskName, duration, false);
         }
         else
         {

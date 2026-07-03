@@ -8,14 +8,18 @@ using UnityEngine.Events;
 [System.Serializable]
 public class Task
 {
+    public string taskDate;
+    public string taskTime;
     public string taskName;
     public int durationMinutes;
     public bool isStrictBlock;
     public bool isCompleted;
 
     // Basit bir constructor (isteğe bağlı)
-    public Task(string name, int duration, bool strictBlock, bool completed = false)
+    public Task(string date, string time, string name, int duration, bool strictBlock, bool completed = false)
     {
+        taskDate = date;
+        taskTime = time;
         taskName = name;
         durationMinutes = duration;
         isStrictBlock = strictBlock;
@@ -170,9 +174,9 @@ public class ScheduleManager : MonoBehaviour
         }
     }
 
-    public void AddTask(string taskName, int duration, bool isStrict = false)
+    public void AddTask(string tarih, string time, string taskName, int duration, bool isStrict = false)
     {
-        Task newTask = new Task(taskName, duration, isStrict);
+        Task newTask = new Task(tarih, time, taskName, duration, isStrict);
         tasks.Add(newTask);
 
         if (taskListManager != null)
@@ -214,7 +218,7 @@ public class ScheduleManager : MonoBehaviour
                 PageNavigator navigator = FindFirstObjectByType<PageNavigator>();
                 if (navigator != null) {
                     foreach (var gorev in this.tasks) {
-                        navigator.GorevKartiEkle(gorev.taskName, gorev.durationMinutes.ToString(), gorev.isStrictBlock, false); 
+                        navigator.GorevKartiEkle(gorev.taskDate, gorev.taskTime, gorev.taskName, gorev.durationMinutes.ToString(), gorev.isStrictBlock, false); 
                     }
                 }
                 return;
@@ -224,16 +228,17 @@ public class ScheduleManager : MonoBehaviour
         // Hiç kayıt yoksa (veya liste boşsa/bozulmuşsa) varsayılan görevleri kullan
         Debug.Log("[ScheduleManager] Kayıt bulunamadı, varsayılan görevler oluşturuluyor.");
         tasks.Clear();
-        tasks.Add(new Task("Hazırlık ve E-postalar", 30, true));
-        tasks.Add(new Task("Programlama", 120, false));
-        tasks.Add(new Task("Öğle Yemeği", 60, true));
-        tasks.Add(new Task("Proje Tasarımı", 90, false));
+        string today = System.DateTime.Now.ToString("dd.MM.yyyy");
+        tasks.Add(new Task(today, "09:00", "Hazırlık ve E-postalar", 30, true));
+        tasks.Add(new Task(today, "10:00", "Programlama", 120, false));
+        tasks.Add(new Task(today, "12:30", "Öğle Yemeği", 60, true));
+        tasks.Add(new Task(today, "14:00", "Proje Tasarımı", 90, false));
         SaveTasks();
 
         PageNavigator nav = FindFirstObjectByType<PageNavigator>();
         if (nav != null) {
             foreach (var gorev in tasks) {
-                nav.GorevKartiEkle(gorev.taskName, gorev.durationMinutes.ToString(), gorev.isStrictBlock, false); 
+                nav.GorevKartiEkle(gorev.taskDate, gorev.taskTime, gorev.taskName, gorev.durationMinutes.ToString(), gorev.isStrictBlock, false); 
             }
         }
     }

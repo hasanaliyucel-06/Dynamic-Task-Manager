@@ -1,15 +1,34 @@
 using UnityEngine;
 using UnityEngine.UIElements;
+using System.Linq;
 
 public class PageNavigator : MonoBehaviour
 {
     public System.Collections.Generic.List<UzunVadeliHedef> aktifHedefler = new System.Collections.Generic.List<UzunVadeliHedef>();
 
-    // Sürükle Bırak (Drag & Drop) Değişkenleri
-    private VisualElement draggedCard;
-    private bool isDragging = false;
-    private Vector2 startMousePosition;
-    private int originalIndex;
+
+
+    // Takvim Değişkenleri
+    // Takvim Değişkenleri
+    private System.DateTime? secilenBaslangic = null;
+    private System.DateTime? secilenBitis = null;
+
+    // Sihirbaz Değişkenleri
+    private int sihirbazAdimi = 0;
+    private string geciciGorevAdi = "";
+    private int geciciSure = 0;
+
+
+    
+    private int bugunToplamGorev = 0;
+    private int bugunTamamlananGorev = 0;
+    private VisualElement progressBarFill;
+
+    private void GuncelleProgressBar() {
+        if (progressBarFill == null) return;
+        float yuzde = bugunToplamGorev > 0 ? ((float)bugunTamamlananGorev / bugunToplamGorev) * 100f : 0f;
+        progressBarFill.style.width = new Length(yuzde, LengthUnit.Percent);
+    }
 
     private void HedefleriYukle() {
         if (PlayerPrefs.HasKey("AktifHedefler")) {
@@ -51,142 +70,314 @@ public class PageNavigator : MonoBehaviour
         pageDisiplin = root.Q<VisualElement>("pageDisiplin");
         pageSistem = root.Q<VisualElement>("pageSistem");
 
+        progressBarFill = root.Q<VisualElement>("progressBarFill");
+
+        
+        // İlk durum güncellemesi
+        GuncelleProgressBar();
+
         if (btnSohbet != null) btnSohbet.clicked += () => SayfaDegistir(0);
         if (btnGorevler != null) btnGorevler.clicked += () => SayfaDegistir(1);
         if (btnDisiplin != null) btnDisiplin.clicked += () => SayfaDegistir(2);
         if (btnSistem != null) btnSistem.clicked += () => SayfaDegistir(3);
 
         TextField inputGorev = root.Q<TextField>("Input_YeniGorev");
-        TextField inputGorevSure = root.Q<TextField>("GorevSureInput");
         Button btnGorevEkle = root.Q<Button>("Btn_GorevEkle");
         ScrollView gorevListesi = root.Q<ScrollView>("gorevlerScrollView");
 
-        if (btnGorevEkle != null && inputGorev != null && gorevListesi != null)
+        VisualElement gorevSihirbaziOverlay = root.Q<VisualElement>("gorevSihirbaziOverlay");
+        Label lblSihirbazBaslik = root.Q<Label>("lblSihirbazBaslik");
+        TextField inputSihirbazDeger = root.Q<TextField>("inputSihirbazDeger");
+        VisualElement timeInputContainer = root.Q<VisualElement>("timeInputContainer");
+        TextField inputSaat = root.Q<TextField>("inputSaat");
+        TextField inputDakika = root.Q<TextField>("inputDakika");
+        
+        TextField[] allInputs = { inputSihirbazDeger, inputSaat, inputDakika };
+        foreach(var inp in allInputs) {
+            if (inp != null) {
+                VisualElement innerInput = inp.Q(className: "unity-text-field__input");
+                if (innerInput != null) {
+                    innerInput.style.backgroundColor = new StyleColor(new Color(0.11f, 0.14f, 0.20f));
+                    innerInput.style.color = new StyleColor(Color.white);
+                    innerInput.style.borderTopColor = new StyleColor(Color.cyan);
+                    innerInput.style.borderBottomColor = new StyleColor(Color.cyan);
+                    innerInput.style.borderLeftColor = new StyleColor(Color.cyan);
+                    innerInput.style.borderRightColor = new StyleColor(Color.cyan);
+                    innerInput.style.borderTopWidth = 1;
+                    innerInput.style.borderBottomWidth = 1;
+                    innerInput.style.borderLeftWidth = 1;
+                    innerInput.style.borderRightWidth = 1;
+                    innerInput.style.borderTopLeftRadius = 6;
+                    innerInput.style.borderTopRightRadius = 6;
+                    innerInput.style.borderBottomLeftRadius = 6;
+                    innerInput.style.borderBottomRightRadius = 6;
+                }
+            }
+        }
+
+        if (inputSihirbazDeger != null) {
+            inputSihirbazDeger.RegisterValueChangedCallback(evt => {
+                if (string.IsNullOrEmpty(evt.newValue)) return;
+                if (sihirbazAdimi == 1) {
+                    inputSihirbazDeger.maxLength = 3; 
+                    string filtered = new string(evt.newValue.Where(char.IsDigit).ToArray());
+                    if (filtered != evt.newValue) {
+                        inputSihirbazDeger.SetValueWithoutNotify(filtered);
+                    }
+                }
+            });
+        }
+        
+        if (inputSaat != null) {
+            inputSaat.RegisterValueChangedCallback(evt => {
+                if (string.IsNullOrEmpty(evt.newValue)) return;
+                string filtered = new string(evt.newValue.Where(char.IsDigit).ToArray());
+                if (filtered != evt.newValue) {
+                    inputSaat.SetValueWithoutNotify(filtered);
+                }
+                if (!string.IsNullOrEmpty(filtered) && int.TryParse(filtered, out int s)) {
+                    if (s > 23) inputSaat.SetValueWithoutNotify("23");
+                }
+            });
+        }
+
+        if (inputDakika != null) {
+            inputDakika.RegisterValueChangedCallback(evt => {
+                if (string.IsNullOrEmpty(evt.newValue)) return;
+                string filtered = new string(evt.newValue.Where(char.IsDigit).ToArray());
+                if (filtered != evt.newValue) {
+                    inputDakika.SetValueWithoutNotify(filtered);
+                }
+                if (!string.IsNullOrEmpty(filtered) && int.TryParse(filtered, out int d)) {
+                    if (d > 59) inputDakika.SetValueWithoutNotify("59");
+                }
+            });
+        }
+        Button btnSihirbazOnay = root.Q<Button>("btnSihirbazOnay");
+        Button btnSihirbazIptal = root.Q<Button>("btnSihirbazIptal");
+
+        if (btnGorevEkle != null && inputGorev != null)
         {
             btnGorevEkle.clicked += () => {
                 if (string.IsNullOrWhiteSpace(inputGorev.value)) return;
 
-                string sureDegeri = "0";
-                if (inputGorevSure != null && !string.IsNullOrWhiteSpace(inputGorevSure.value))
-                {
-                    if (int.TryParse(inputGorevSure.value, out int parsedSure))
-                    {
-                        sureDegeri = parsedSure.ToString();
-                    }
+                geciciGorevAdi = inputGorev.value;
+                sihirbazAdimi = 1;
+                
+                if(lblSihirbazBaslik != null) lblSihirbazBaslik.text = "Görev Süresi (Dk):";
+                if(inputSihirbazDeger != null) {
+                    inputSihirbazDeger.value = "";
+                    inputSihirbazDeger.style.display = DisplayStyle.Flex;
                 }
-
-                GorevKartiEkle(inputGorev.value, sureDegeri, false);
+                if(timeInputContainer != null) timeInputContainer.style.display = DisplayStyle.None;
+                
+                if(btnSihirbazOnay != null) btnSihirbazOnay.text = "İLERİ";
+                if(gorevSihirbaziOverlay != null) gorevSihirbaziOverlay.style.display = DisplayStyle.Flex;
                 
                 inputGorev.value = ""; // Kutuyu temizle
-                if (inputGorevSure != null) inputGorevSure.value = "";
+            };
+        }
+
+        if (btnSihirbazIptal != null && gorevSihirbaziOverlay != null) {
+            btnSihirbazIptal.clicked += () => {
+                gorevSihirbaziOverlay.style.display = DisplayStyle.None;
+                if(inputSihirbazDeger != null) {
+                    inputSihirbazDeger.value = "";
+                    inputSihirbazDeger.style.display = DisplayStyle.Flex;
+                }
+                if(timeInputContainer != null) timeInputContainer.style.display = DisplayStyle.None;
+                if(inputSaat != null) inputSaat.value = "";
+                if(inputDakika != null) inputDakika.value = "";
+                sihirbazAdimi = 0;
+            };
+        }
+
+        if (btnSihirbazOnay != null && inputSihirbazDeger != null) {
+            btnSihirbazOnay.clicked += () => {
+                if (sihirbazAdimi == 1) {
+                    if (int.TryParse(inputSihirbazDeger.value, out geciciSure)) {
+                        sihirbazAdimi = 2;
+                        if(lblSihirbazBaslik != null) lblSihirbazBaslik.text = "Başlangıç Saati:";
+                        inputSihirbazDeger.style.display = DisplayStyle.None;
+                        if(timeInputContainer != null) timeInputContainer.style.display = DisplayStyle.Flex;
+                        if(btnSihirbazOnay != null) btnSihirbazOnay.text = "TAMAMLA";
+                        if(inputSaat != null) inputSaat.Focus();
+                    }
+                }
+                else if (sihirbazAdimi == 2) {
+                    // Saat ve Dakikayı al (boşlarsa 0 varsay)
+                    int saat = (inputSaat != null && !string.IsNullOrEmpty(inputSaat.value)) ? int.Parse(inputSaat.value) : 0;
+                    int dakika = (inputDakika != null && !string.IsNullOrEmpty(inputDakika.value)) ? int.Parse(inputDakika.value) : 0;
+                    
+                    // SADECE Başlangıç saatini (HH:MM formatında) birleştir
+                    string zamanMetni = $"{saat:D2}:{dakika:D2}";
+                    
+                    // Görevi ekle
+                    string bugununTarihi = System.DateTime.Now.ToString("dd.MM.yyyy");
+                    GorevKartiEkle(bugununTarihi, zamanMetni, geciciGorevAdi, geciciSure.ToString(), false);
+                    
+                    // Sihirbazı sıfırla ve kapat
+                    if(gorevSihirbaziOverlay != null) gorevSihirbaziOverlay.style.display = DisplayStyle.None;
+                    if(inputSihirbazDeger != null) inputSihirbazDeger.style.display = DisplayStyle.Flex; 
+                    if(timeInputContainer != null) timeInputContainer.style.display = DisplayStyle.None;
+                    if(inputSihirbazDeger != null) inputSihirbazDeger.value = "";
+                    if(inputSaat != null) inputSaat.value = "";
+                    if(inputDakika != null) inputDakika.value = "";
+                    sihirbazAdimi = 0;
+                }
             };
         }
 
         TextField inputHedef = root.Q<TextField>("inputHedef");
         Button btnAiPlanla = root.Q<Button>("btnAiPlanla");
 
-        Button btnBaslangic = root.Q<Button>("btnBaslangic");
-        Button btnBitis = root.Q<Button>("btnBitis");
-        VisualElement takvimPenceresi = root.Q<VisualElement>("takvimPenceresi");
-        VisualElement takvimGunler = root.Q<VisualElement>("takvimGunler");
+        VisualElement takvimGunler = root.Q<VisualElement>("takvimGunleriWrap");
         Label lblTakvimAyYil = root.Q<Label>("lblTakvimAyYil");
-        Button btnTakvimKapat = root.Q<Button>("btnTakvimKapat");
         Button btnTakvimOnceki = root.Q<Button>("btnTakvimOnceki");
         Button btnTakvimSonraki = root.Q<Button>("btnTakvimSonraki");
 
-        System.DateTime secilenBaslangic = System.DateTime.Now;
-        System.DateTime secilenBitis = System.DateTime.MinValue;
-        bool isBaslangicSeciliyor = true;
-
         System.DateTime gosterilenAy = new System.DateTime(System.DateTime.Now.Year, System.DateTime.Now.Month, 1);
 
-        System.Action TakvimGuncelle = () => {
+        System.Action TakvimGuncelle = null;
+        TakvimGuncelle = () => {
             if (takvimGunler == null) return;
             takvimGunler.Clear();
             if (lblTakvimAyYil != null) lblTakvimAyYil.text = gosterilenAy.ToString("MMMM yyyy");
             
             int gunSayisi = System.DateTime.DaysInMonth(gosterilenAy.Year, gosterilenAy.Month);
+            
+            int firstDayOfWeek = (int)new System.DateTime(gosterilenAy.Year, gosterilenAy.Month, 1).DayOfWeek;
+            int boslukSayisi = (firstDayOfWeek == 0) ? 6 : firstDayOfWeek - 1;
+            
+            for (int b = 0; b < boslukSayisi; b++) {
+                VisualElement bosluk = new VisualElement();
+                bosluk.style.width = 35;
+                bosluk.style.height = 35;
+                bosluk.style.marginRight = 2;
+                bosluk.style.marginBottom = 2;
+                takvimGunler.Add(bosluk);
+            }
+
             for (int i = 1; i <= gunSayisi; i++) {
                 int g = i;
+                System.DateTime iterasyonTarihi = new System.DateTime(gosterilenAy.Year, gosterilenAy.Month, g);
+                
                 Button gunBtn = new Button();
                 gunBtn.text = g.ToString();
                 gunBtn.style.width = 35;
                 gunBtn.style.height = 35;
                 gunBtn.style.marginRight = 2;
                 gunBtn.style.marginBottom = 2;
+                gunBtn.style.borderTopWidth = 0;
+                gunBtn.style.borderBottomWidth = 0;
+                gunBtn.style.borderLeftWidth = 0;
+                gunBtn.style.borderRightWidth = 0;
+                gunBtn.style.paddingLeft = 0;
+                gunBtn.style.paddingRight = 0;
+                gunBtn.style.paddingTop = 0;
+                gunBtn.style.paddingBottom = 0;
+                
+                // Varsayılan Stil
                 gunBtn.style.backgroundColor = new StyleColor(new Color(0.2f, 0.2f, 0.2f));
                 gunBtn.style.color = new StyleColor(Color.white);
                 
-                if (gosterilenAy.Year == System.DateTime.Now.Year && gosterilenAy.Month == System.DateTime.Now.Month && g == System.DateTime.Now.Day) {
-                    gunBtn.style.backgroundColor = new StyleColor(new Color(0f, 0.5f, 1f));
+                // Seçim Durumuna Göre Stil
+                bool isBaslangic = secilenBaslangic.HasValue && secilenBaslangic.Value.Date == iterasyonTarihi.Date;
+                bool isBitis = secilenBitis.HasValue && secilenBitis.Value.Date == iterasyonTarihi.Date;
+                bool isArada = secilenBaslangic.HasValue && secilenBitis.HasValue && 
+                               iterasyonTarihi.Date > secilenBaslangic.Value.Date && 
+                               iterasyonTarihi.Date < secilenBitis.Value.Date;
+
+                if (isBaslangic || isBitis) {
+                    gunBtn.style.backgroundColor = new StyleColor(new Color(0.05f, 0.65f, 0.91f)); // Neon Mavi
+                    gunBtn.style.color = new StyleColor(Color.white);
+                } else if (isArada) {
+                    gunBtn.style.backgroundColor = new StyleColor(new Color(0.05f, 0.65f, 0.91f, 0.3f)); // Yarı saydam neon mavi
+                } else if (iterasyonTarihi.Date == System.DateTime.Now.Date) {
+                    gunBtn.style.borderTopWidth = 1;
+                    gunBtn.style.borderBottomWidth = 1;
+                    gunBtn.style.borderLeftWidth = 1;
+                    gunBtn.style.borderRightWidth = 1;
+                    gunBtn.style.borderTopColor = new StyleColor(Color.gray);
+                    gunBtn.style.borderBottomColor = new StyleColor(Color.gray);
+                    gunBtn.style.borderLeftColor = new StyleColor(Color.gray);
+                    gunBtn.style.borderRightColor = new StyleColor(Color.gray);
+                }
+
+                // Marker Ekleme
+                bool hasMarker = false;
+                if (aktifHedefler != null) {
+                    foreach(var hedef in aktifHedefler) {
+                        System.DateTime hBaslangic;
+                        if(System.DateTime.TryParseExact(hedef.baslangicTarihi, "dd.MM.yyyy", null, System.Globalization.DateTimeStyles.None, out hBaslangic)) {
+                            System.DateTime hBitis = hBaslangic.AddDays(hedef.kalanGun);
+                            if(iterasyonTarihi.Date == hBaslangic.Date || iterasyonTarihi.Date == hBitis.Date) {
+                                hasMarker = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if(hasMarker) {
+                    VisualElement marker = new VisualElement();
+                    marker.style.position = Position.Absolute;
+                    marker.style.bottom = 4;
+                    marker.style.left = 15;
+                    marker.style.width = 4;
+                    marker.style.height = 4;
+                    marker.style.borderTopLeftRadius = 2;
+                    marker.style.borderTopRightRadius = 2;
+                    marker.style.borderBottomLeftRadius = 2;
+                    marker.style.borderBottomRightRadius = 2;
+                    marker.style.backgroundColor = new StyleColor(new Color(0.97f, 0.45f, 0.08f)); // Turuncu/Kırmızı
+                    gunBtn.Add(marker);
                 }
 
                 gunBtn.clicked += () => {
-                    System.DateTime secilenTakvimTarihi = new System.DateTime(gosterilenAy.Year, gosterilenAy.Month, g);
-                    
-                    if (isBaslangicSeciliyor) {
-                        secilenBaslangic = secilenTakvimTarihi;
-                        if (btnBaslangic != null) btnBaslangic.text = "Başlangıç: " + secilenBaslangic.ToString("dd.MM.yyyy");
-                    } else {
-                        secilenBitis = secilenTakvimTarihi;
-                        if (btnBitis != null) btnBitis.text = "Bitiş: " + secilenBitis.ToString("dd.MM.yyyy");
+                    if (!secilenBaslangic.HasValue || (secilenBaslangic.HasValue && secilenBitis.HasValue)) {
+                        secilenBaslangic = iterasyonTarihi;
+                        secilenBitis = null;
+                    } else if (secilenBaslangic.HasValue && !secilenBitis.HasValue) {
+                        if (iterasyonTarihi.Date >= secilenBaslangic.Value.Date) {
+                            secilenBitis = iterasyonTarihi;
+                        } else if (iterasyonTarihi.Date < secilenBaslangic.Value.Date) {
+                            secilenBaslangic = iterasyonTarihi;
+                        }
                     }
-
-                    takvimPenceresi.style.display = DisplayStyle.None;
+                    TakvimGuncelle();
                 };
+                
                 takvimGunler.Add(gunBtn);
             }
         };
 
-        if (takvimPenceresi != null)
-        {
-            if (btnBaslangic != null) {
-                btnBaslangic.text = "Başlangıç: " + System.DateTime.Now.ToString("dd.MM.yyyy");
-                btnBaslangic.clicked += () => {
-                    isBaslangicSeciliyor = true;
-                    gosterilenAy = new System.DateTime(secilenBaslangic.Year, secilenBaslangic.Month, 1);
-                    takvimPenceresi.style.display = DisplayStyle.Flex;
-                    TakvimGuncelle();
-                };
-            }
-
-            if (btnBitis != null) {
-                btnBitis.clicked += () => {
-                    isBaslangicSeciliyor = false;
-                    System.DateTime baslangicGosterimi = secilenBitis != System.DateTime.MinValue ? secilenBitis : secilenBaslangic;
-                    gosterilenAy = new System.DateTime(baslangicGosterimi.Year, baslangicGosterimi.Month, 1);
-                    takvimPenceresi.style.display = DisplayStyle.Flex;
-                    TakvimGuncelle();
-                };
-            }
-            
-            if (btnTakvimKapat != null) btnTakvimKapat.clicked += () => takvimPenceresi.style.display = DisplayStyle.None;
-            
-            if (btnTakvimOnceki != null) {
-                btnTakvimOnceki.clicked += () => {
-                    gosterilenAy = gosterilenAy.AddMonths(-1);
-                    TakvimGuncelle();
-                };
-            }
-            if (btnTakvimSonraki != null) {
-                btnTakvimSonraki.clicked += () => {
-                    gosterilenAy = gosterilenAy.AddMonths(1);
-                    TakvimGuncelle();
-                };
-            }
+        if (btnTakvimOnceki != null) {
+            btnTakvimOnceki.clicked += () => {
+                gosterilenAy = gosterilenAy.AddMonths(-1);
+                TakvimGuncelle();
+            };
         }
+        if (btnTakvimSonraki != null) {
+            btnTakvimSonraki.clicked += () => {
+                gosterilenAy = gosterilenAy.AddMonths(1);
+                TakvimGuncelle();
+            };
+        }
+
+        TakvimGuncelle();
 
         if (btnAiPlanla != null && inputHedef != null)
         {
             btnAiPlanla.clicked += () => {
                 if (string.IsNullOrWhiteSpace(inputHedef.value)) return;
                 
-                if (secilenBitis == System.DateTime.MinValue) {
-                    Debug.LogWarning("Bitiş tarihi seçilmedi!");
+                if (!secilenBaslangic.HasValue || !secilenBitis.HasValue) {
+                    Debug.LogWarning("Başlangıç ve Bitiş tarihi seçilmedi!");
                     return;
                 }
 
-                int kalanGun = (int)(secilenBitis.Date - secilenBaslangic.Date).TotalDays;
+                int kalanGun = (int)(secilenBitis.Value.Date - secilenBaslangic.Value.Date).TotalDays;
 
                 if (kalanGun < 0) {
                     Debug.LogWarning("Bitiş tarihi, Başlangıç tarihinden önce olamaz!");
@@ -196,7 +387,7 @@ public class PageNavigator : MonoBehaviour
                 btnAiPlanla.SetEnabled(false);
                 btnAiPlanla.text = "PLANLANIYOR...";
 
-                string gizliPrompt = $"Kullanıcının '{inputHedef.value}' hedefine ulaşması için {kalanGun} günü var. BUGÜN yapması gereken tek bir spesifik görev üret. Yanıtın KESİNLİKLE sadece şu formatta olmalı: [HEDEF:Görev Adı:SÜRE]. SÜRE kısmı SADECE ve SADECE rakamlardan (örn: 30) oluşmalıdır. Hiçbir metin ekleme!";
+                string gizliPrompt = $"Kullanıcının '{inputHedef.value}' hedefine ulaşması için {kalanGun} günü var. BUGÜN yapması gereken tek bir spesifik görev üret. Yanıtın KESİNLİKLE sadece şu formatta olmalı: [HEDEF:SAAT:Görev Adı:SÜRE]. SAAT kısmı HH:MM formatında (örn: 09:00) olmalıdır. SÜRE kısmı SADECE ve SADECE rakamlardan (örn: 30) oluşmalıdır. Hiçbir metin ekleme!";
 
                 SiberAsistan asistan = FindFirstObjectByType<SiberAsistan>();
                 if (asistan != null)
@@ -206,22 +397,24 @@ public class PageNavigator : MonoBehaviour
                         temizCevap = temizCevap.Replace("[HEDEF:", "").Replace("]", "");
                         
                         string[] parcalar = temizCevap.Split(':');
-                        if (parcalar.Length >= 2)
+                        if (parcalar.Length >= 3)
                         {
+                            string saat = $"{parcalar[0].Trim()}:{parcalar[1].Trim()}";
                             string gelenSure = parcalar[parcalar.Length - 1].Trim();
                             string sadeceRakamlar = System.Text.RegularExpressions.Regex.Match(gelenSure, @"\d+").Value;
                             if (string.IsNullOrEmpty(sadeceRakamlar)) {
                                 sadeceRakamlar = "30"; 
                             }
 
-                            string gorevAdi = string.Join(":", parcalar, 0, parcalar.Length - 1).Trim();
+                            string gorevAdi = string.Join(":", parcalar, 2, parcalar.Length - 3).Trim();
                             
-                            GorevKartiEkle(gorevAdi, sadeceRakamlar, false);
+                            string bugun = System.DateTime.Now.ToString("dd.MM.yyyy");
+                            GorevKartiEkle(bugun, saat, gorevAdi, sadeceRakamlar, false);
 
                             UzunVadeliHedef yeniHedef = new UzunVadeliHedef();
                             yeniHedef.hedefAdi = inputHedef.value;
                             yeniHedef.kalanGun = kalanGun;
-                            yeniHedef.baslangicTarihi = System.DateTime.Now.ToString("dd.MM.yyyy");
+                            yeniHedef.baslangicTarihi = secilenBaslangic.Value.ToString("dd.MM.yyyy");
                             aktifHedefler.Add(yeniHedef);
 
                             HedefListesiWrapper wrapper = new HedefListesiWrapper();
@@ -235,6 +428,9 @@ public class PageNavigator : MonoBehaviour
                         }
 
                         inputHedef.value = "";
+                        secilenBaslangic = null;
+                        secilenBitis = null;
+                        TakvimGuncelle();
                         btnAiPlanla.text = "YAPAY ZEKAYA PLANLAT";
                         btnAiPlanla.SetEnabled(true);
                     });
@@ -294,68 +490,13 @@ public class PageNavigator : MonoBehaviour
     }
 
     private void MakeDraggable(VisualElement card) {
-        card.RegisterCallback<PointerDownEvent>(evt => {
-            isDragging = true;
-            draggedCard = card;
-            originalIndex = card.parent.IndexOf(card);
-            startMousePosition = evt.position;
-            card.style.opacity = 0.7f;
-            card.BringToFront();
-            card.CapturePointer(evt.pointerId);
-            
-            // ScrollView kaymasını engellemek için event'in yukarı çıkmasını durdur
-            evt.StopPropagation();
-        });
-
-        card.RegisterCallback<PointerMoveEvent>(evt => {
-            if (isDragging && draggedCard == card) {
-                float yFarki = evt.position.y - startMousePosition.y;
-                card.style.translate = new StyleTranslate(new Translate(0, yFarki, 0));
-
-                VisualElement parent = card.parent;
-                int currentIndex = parent.IndexOf(card);
-                int newIndex = currentIndex;
-
-                for (int i = 0; i < parent.childCount; i++) {
-                    var child = parent.ElementAt(i);
-                    if (child != card) {
-                        // Eğer sürüklenen kartın merkezi, diğer kartın sınırları içindeyse
-                        if (card.worldBound.center.y > child.worldBound.yMin && 
-                            card.worldBound.center.y < child.worldBound.yMax) {
-                            newIndex = i;
-                            break;
-                        }
-                    }
-                }
-
-                if (newIndex != currentIndex) {
-                    parent.Insert(newIndex, card);
-                    // Hiyerarşi değiştiğinde fiziksel zıplamayı önlemek için fare başlangıç pozisyonunu sıfırla
-                    startMousePosition = evt.position;
-                    card.style.translate = new StyleTranslate(new Translate(0, 0, 0));
-                }
-                
-                evt.StopPropagation();
-            }
-        });
-
-        card.RegisterCallback<PointerUpEvent>(evt => {
-            if (!isDragging) return;
-            isDragging = false;
-            card.ReleasePointer(evt.pointerId);
-            card.style.translate = new StyleTranslate(new Translate(0, 0, 0));
-            card.style.opacity = 1f;
-        });
-
-        card.RegisterCallback<PointerCaptureOutEvent>(evt => {
-            if (!isDragging) return;
-            isDragging = false;
-            card.style.translate = new StyleTranslate(new Translate(0, 0, 0));
-            card.style.opacity = 1f;
-        });
+        // Sürükle-bırak motoru iptal edildi.
     }
 
-    public void GorevKartiEkle(string gorevAdi, string sure = "", bool katiMi = false, bool kaydet = true) {
+    public void GorevKartiEkle(string tarih, string saat, string gorevAdi, string sure = "", bool katiMi = false, bool kaydet = true) {
+        bugunToplamGorev++;
+        GuncelleProgressBar();
+        
         ScrollView gorevListesi = GetComponent<UIDocument>().rootVisualElement.Q<ScrollView>("gorevlerScrollView");
         if(gorevListesi == null) return;
 
@@ -371,6 +512,15 @@ public class PageNavigator : MonoBehaviour
         VisualElement solPanel = new VisualElement();
         solPanel.style.flexDirection = FlexDirection.Column;
         solPanel.style.flexGrow = 1; 
+
+        // Görev Saati (Timeblocking)
+        Label lblGorevSaati = new Label(saat);
+        lblGorevSaati.name = "lblGorevSaati";
+        lblGorevSaati.style.color = new StyleColor(new Color(0f, 1f, 1f)); // Neon Camgöbeği #00FFFF
+        lblGorevSaati.style.fontSize = 14;
+        lblGorevSaati.style.unityFontStyleAndWeight = FontStyle.Bold;
+        lblGorevSaati.style.marginBottom = 2;
+        solPanel.Add(lblGorevSaati);
 
         Label gorevYazisi = new Label(gorevAdi);
         gorevYazisi.AddToClassList("task-text");
@@ -409,13 +559,22 @@ public class PageNavigator : MonoBehaviour
         btnTamamlandi.style.borderRightWidth = 0;
         btnTamamlandi.style.marginRight = 5;
         
+        bool isCompleted = false;
+        
         btnTamamlandi.clicked += () => { 
-            kart.RemoveFromHierarchy(); 
-            AktifGorevSayisiniGuncelle();
-            
-            ScheduleManager sManager = FindFirstObjectByType<ScheduleManager>();
-            if (sManager != null) {
-                sManager.RemoveTask(gorevAdi);
+            if (!isCompleted) {
+                bugunTamamlananGorev++;
+                isCompleted = true;
+                kart.style.opacity = 0.5f;
+                btnTamamlandi.style.backgroundColor = new StyleColor(Color.gray);
+                GuncelleProgressBar();
+                
+                AktifGorevSayisiniGuncelle();
+                
+                ScheduleManager sManager = FindFirstObjectByType<ScheduleManager>();
+                if (sManager != null) {
+                    sManager.RemoveTask(gorevAdi);
+                }
             }
         }; 
 
@@ -479,9 +638,38 @@ public class PageNavigator : MonoBehaviour
         kart.Add(solPanel);
         kart.Add(butonKutusu);
 
-        MakeDraggable(kart); // Kartı fiziksel olarak sürüklenebilir yap
 
-        gorevListesi.Insert(0, kart); // Yeni görevi en üste ekle
+
+        System.TimeSpan yeniSaatTS;
+        string parslanacakSaat = saat;
+        if (parslanacakSaat.Length >= 5 && parslanacakSaat.Contains("-")) {
+            parslanacakSaat = parslanacakSaat.Substring(0, 5).Trim();
+        }
+        bool isParsed = System.TimeSpan.TryParse(parslanacakSaat, out yeniSaatTS);
+        
+        int insertIndex = gorevListesi.childCount; // Varsayılan olarak en sona ekle
+        
+        if (isParsed) {
+            for (int i = 0; i < gorevListesi.childCount; i++) {
+                VisualElement sibling = gorevListesi.ElementAt(i);
+                Label lblSibling = sibling.Q<Label>("lblGorevSaati");
+                if (lblSibling != null) {
+                    string sibSaat = lblSibling.text;
+                    if (sibSaat.Length >= 5 && sibSaat.Contains("-")) {
+                        sibSaat = sibSaat.Substring(0, 5).Trim();
+                    }
+                    System.TimeSpan siblingTS;
+                    if (System.TimeSpan.TryParse(sibSaat, out siblingTS)) {
+                        if (yeniSaatTS < siblingTS) {
+                            insertIndex = i;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        
+        gorevListesi.Insert(insertIndex, kart); // Kronolojik sıraya göre ekle
         AktifGorevSayisiniGuncelle();
 
         if (kaydet) {
@@ -489,7 +677,7 @@ public class PageNavigator : MonoBehaviour
             if (sManager != null) {
                 int sureInt = 0;
                 int.TryParse(sure, out sureInt);
-                sManager.AddTask(gorevAdi, sureInt, katiMi);
+                sManager.AddTask(tarih, saat, gorevAdi, sureInt, katiMi);
             }
         }
     }
