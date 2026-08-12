@@ -1,5 +1,17 @@
 using UnityEngine;
 using UnityEngine.UIElements;
+using System.Collections.Generic;
+
+[System.Serializable]
+public class SohbetMesaji {
+    public string metin;
+    public bool kullaniciMi;
+}
+
+[System.Serializable]
+public class SohbetGecmisi {
+    public List<SohbetMesaji> mesajlar = new List<SohbetMesaji>();
+}
 
 public class ModernAsistanBaglantisi : MonoBehaviour
 {
@@ -10,8 +22,11 @@ public class ModernAsistanBaglantisi : MonoBehaviour
     private ScrollView scrollSohbet;
     private Label lblStatus;
     private VisualElement inputContainer;
+    private VisualElement emptySohbet;
 
     public SiberAsistan siberAsistan; 
+
+    private SohbetGecmisi sohbetGecmisi = new SohbetGecmisi();
 
     void OnEnable()
     {
@@ -25,12 +40,47 @@ public class ModernAsistanBaglantisi : MonoBehaviour
         scrollSohbet = root.Q<ScrollView>("scrollSohbet");
         lblStatus = root.Q<Label>(className: "header-status");
         inputContainer = root.Q<VisualElement>(className: "bottom-bar");
+        emptySohbet = root.Q<VisualElement>("emptySohbet");
 
         if (gonderButonu != null)
         {
             gonderButonu.clicked -= MesajGonderildi;
             gonderButonu.clicked += MesajGonderildi;
         }
+
+        SohbetGecmisiniYukle();
+    }
+
+    private void SohbetGecmisiniYukle()
+    {
+        if (PlayerPrefs.HasKey("SohbetGecmisi"))
+        {
+            string json = PlayerPrefs.GetString("SohbetGecmisi");
+            sohbetGecmisi = JsonUtility.FromJson<SohbetGecmisi>(json);
+            if (sohbetGecmisi != null && sohbetGecmisi.mesajlar != null)
+            {
+                foreach (var msg in sohbetGecmisi.mesajlar)
+                {
+                    EkranaMesajBas(msg.metin, msg.kullaniciMi, false);
+                }
+            }
+            else
+            {
+                sohbetGecmisi = new SohbetGecmisi();
+            }
+        }
+    }
+
+    private void SohbetiKaydet()
+    {
+        // En fazla 50 mesaj tut (bellek taşmasını önle)
+        if (sohbetGecmisi.mesajlar.Count > 50)
+        {
+            sohbetGecmisi.mesajlar.RemoveRange(0, sohbetGecmisi.mesajlar.Count - 50);
+        }
+        string json = JsonUtility.ToJson(sohbetGecmisi);
+        PlayerPrefs.SetString("SohbetGecmisi", json);
+        PlayerPrefs.Save();
     }
 
     void Update()
@@ -67,7 +117,7 @@ public class ModernAsistanBaglantisi : MonoBehaviour
         mesajGirdisi.value = "";
     }
 
-    public void EkranaMesajBas(string metin, bool kullaniciMi)
+    public void EkranaMesajBas(string metin, bool kullaniciMi, bool kaydet = true)
     {
         if (!kullaniciMi) {
             isRequestActive = false;
@@ -75,6 +125,11 @@ public class ModernAsistanBaglantisi : MonoBehaviour
         }
 
         if (scrollSohbet == null) return;
+
+        if (emptySohbet != null)
+        {
+            emptySohbet.style.display = DisplayStyle.None;
+        }
 
         Label label = new Label();
         label.text = metin;
@@ -112,6 +167,15 @@ public class ModernAsistanBaglantisi : MonoBehaviour
         scrollSohbet.schedule.Execute(() => {
             scrollSohbet.ScrollTo(label);
         }).StartingIn(50);
+
+        if (kaydet)
+        {
+            SohbetMesaji yeniMesaj = new SohbetMesaji();
+            yeniMesaj.metin = metin;
+            yeniMesaj.kullaniciMi = kullaniciMi;
+            sohbetGecmisi.mesajlar.Add(yeniMesaj);
+            SohbetiKaydet();
+        }
     }
 
     public void DurumYaziyorYap() 

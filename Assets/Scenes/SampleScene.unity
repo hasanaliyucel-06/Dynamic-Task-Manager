@@ -1335,7 +1335,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6bf27eb456ffe6140b8a7619bafbfba2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PageNavigator
-  aktifHedefler: []
 --- !u!1 &279178154
 GameObject:
   m_ObjectHideFlags: 0
@@ -4570,29 +4569,32 @@ MonoBehaviour:
     durationMinutes: 120
     isStrictBlock: 1
     isCompleted: 0
+    isRepeating: 0
   - taskDate: 
     taskTime: 
     taskName: "Elektro Gitar Prati\u011Fi"
     durationMinutes: 60
     isStrictBlock: 0
     isCompleted: 0
+    isRepeating: 0
   - taskDate: 
     taskTime: 
     taskName: Yemek
     durationMinutes: 45
     isStrictBlock: 1
     isCompleted: 0
+    isRepeating: 0
   - taskDate: 
     taskTime: 
     taskName: Fitness
     durationMinutes: 90
     isStrictBlock: 0
     isCompleted: 0
+    isRepeating: 0
   TotalDelay: 0
   onScheduleUpdated:
     m_PersistentCalls:
       m_Calls: []
-  taskListManager: {fileID: 0}
 --- !u!4 &1300362006
 Transform:
   m_ObjectHideFlags: 0

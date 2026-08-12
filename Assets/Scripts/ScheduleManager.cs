@@ -14,9 +14,10 @@ public class Task
     public int durationMinutes;
     public bool isStrictBlock;
     public bool isCompleted;
+    public bool isRepeating;
 
     // Basit bir constructor (isteğe bağlı)
-    public Task(string date, string time, string name, int duration, bool strictBlock, bool completed = false)
+    public Task(string date, string time, string name, int duration, bool strictBlock, bool completed = false, bool repeating = false)
     {
         taskDate = date;
         taskTime = time;
@@ -24,6 +25,7 @@ public class Task
         durationMinutes = duration;
         isStrictBlock = strictBlock;
         isCompleted = completed;
+        isRepeating = repeating;
     }
 }
 
@@ -45,20 +47,12 @@ public class ScheduleManager : MonoBehaviour
     // Görev listesinde veya gecikmelerde bir değişiklik olduğunda tetiklenir (UI yenilemek için)
     public UnityEvent onScheduleUpdated;
 
-    public TaskListManager taskListManager;
 
     private void Start()
     {
         LoadTasks();
         
-        if (taskListManager != null)
-        {
-            taskListManager.RefreshList();
-        }
-        else
-        {
-            onScheduleUpdated?.Invoke();
-        }
+        onScheduleUpdated?.Invoke();
     }
 
     private void Update()
@@ -146,7 +140,7 @@ public class ScheduleManager : MonoBehaviour
             Debug.LogWarning($"[ScheduleManager] UYARI: Bütün esnek görevler tüketildi ancak hala \n{remainingDebt} dakika gecikme borcu kaldı! Sisteme yeni esnek zaman eklenmesi gerekebilir.");
         }
 
-        // Tüm değişiklikler bittikten sonra UI'ı veya diğer dinleyicileri tetikle (Örn: TaskListManager)
+        // Tüm değişiklikler bittikten sonra UI'ı veya diğer dinleyicileri tetikle
         onScheduleUpdated?.Invoke();
         
         // Değişikliği anında kaydet
@@ -174,19 +168,25 @@ public class ScheduleManager : MonoBehaviour
         }
     }
 
-    public void AddTask(string tarih, string time, string taskName, int duration, bool isStrict = false)
+    public void UpdateTask(string oldName, string newName, string newTime, int newDuration)
     {
-        Task newTask = new Task(tarih, time, taskName, duration, isStrict);
-        tasks.Add(newTask);
-
-        if (taskListManager != null)
+        Task taskToUpdate = tasks.Find(t => t.taskName == oldName);
+        if (taskToUpdate != null)
         {
-            taskListManager.RefreshList();
-        }
-        else
-        {
+            taskToUpdate.taskName = newName;
+            taskToUpdate.taskTime = newTime;
+            taskToUpdate.durationMinutes = newDuration;
+            SaveTasks();
             onScheduleUpdated?.Invoke();
         }
+    }
+
+    public void AddTask(string tarih, string time, string taskName, int duration, bool isStrict = false, bool isRepeating = false)
+    {
+        Task newTask = new Task(tarih, time, taskName, duration, isStrict, false, isRepeating);
+        tasks.Add(newTask);
+
+        onScheduleUpdated?.Invoke();
         
         // Değişikliği anında kaydet
         SaveTasks();
@@ -213,6 +213,34 @@ public class ScheduleManager : MonoBehaviour
             if (wrapper != null && wrapper.tasks != null && wrapper.tasks.Count > 0)
             {
                 this.tasks = wrapper.tasks;
+
+                // --- TEKRARLAYAN GÖREV KONTROLÜ ---
+                string bugunTarih = System.DateTime.Now.ToString("dd.MM.yyyy");
+                bool degisiklikVar = false;
+
+                // Sadece bugünden önceki tekrarlayan görevleri bul ve bugüne kopyala
+                List<Task> eklenecekler = new List<Task>();
+                foreach (var t in this.tasks)
+                {
+                    if (t.isRepeating && t.taskDate != bugunTarih)
+                    {
+                        // Bugün aynı isimde görev var mı kontrol et
+                        bool bugunVarMi = this.tasks.Exists(x => x.taskDate == bugunTarih && x.taskName == t.taskName);
+                        if (!bugunVarMi)
+                        {
+                            eklenecekler.Add(new Task(bugunTarih, t.taskTime, t.taskName, t.durationMinutes, t.isStrictBlock, false, true));
+                            degisiklikVar = true;
+                        }
+                    }
+                }
+
+                if (degisiklikVar)
+                {
+                    this.tasks.AddRange(eklenecekler);
+                    SaveTasks();
+                }
+                // --- SON ---
+
                 Debug.Log("[ScheduleManager] Görevler başarıyla yüklendi.");
                 
                 PageNavigator navigator = FindFirstObjectByType<PageNavigator>();
@@ -223,23 +251,18 @@ public class ScheduleManager : MonoBehaviour
                 }
                 return;
             }
-        }
-        
-        // Hiç kayıt yoksa (veya liste boşsa/bozulmuşsa) varsayılan görevleri kullan
-        Debug.Log("[ScheduleManager] Kayıt bulunamadı, varsayılan görevler oluşturuluyor.");
-        tasks.Clear();
-        string today = System.DateTime.Now.ToString("dd.MM.yyyy");
-        tasks.Add(new Task(today, "09:00", "Hazırlık ve E-postalar", 30, true));
-        tasks.Add(new Task(today, "10:00", "Programlama", 120, false));
-        tasks.Add(new Task(today, "12:30", "Öğle Yemeği", 60, true));
-        tasks.Add(new Task(today, "14:00", "Proje Tasarımı", 90, false));
-        SaveTasks();
-
-        PageNavigator nav = FindFirstObjectByType<PageNavigator>();
-        if (nav != null) {
-            foreach (var gorev in tasks) {
-                nav.GorevKartiEkle(gorev.taskDate, gorev.taskTime, gorev.taskName, gorev.durationMinutes.ToString(), gorev.isStrictBlock, false); 
+            else
+            {
+                // Key var ama liste boşsa (kullanıcı her şeyi silmişse)
+                tasks.Clear();
+                return;
             }
         }
+        
+        // İlk açılış (Hiç kayıt yoksa)
+        tasks.Clear();
+        // Varsayılan görevleri sadece ilk kurulumda göstermek istiyorsak buraya koyabiliriz.
+        // Ama kullanıcı 'hepsini sil' dediğinde de burası tetiklenmesin diye SaveTasks boş kaydedilmelidir.
+        // Artık boş liste gelince geri dolmayacak.
     }
 }
