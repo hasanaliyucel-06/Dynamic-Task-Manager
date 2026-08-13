@@ -38,9 +38,10 @@ public class SihirbazYonetici : MonoBehaviour
         Button btnSihirbazOnay = root.Q<Button>("btnSihirbazOnay");
         Button btnSihirbazIptal = root.Q<Button>("btnSihirbazIptal");
         Toggle toggleTekrarla = root.Q<Toggle>("toggleTekrarla");
+        TextField inputKategori = root.Q<TextField>("inputKategori");
 
         // Input stilleri
-        TextField[] allInputs = { inputSihirbazDeger, inputSaat, inputDakika };
+        TextField[] allInputs = { inputSihirbazDeger, inputSaat, inputDakika, inputKategori };
         foreach (var inp in allInputs)
         {
             if (inp != null)
@@ -145,6 +146,7 @@ public class SihirbazYonetici : MonoBehaviour
                 if (timeInputContainer != null) timeInputContainer.style.display = DisplayStyle.None;
                 if (inputSaat != null) inputSaat.value = "";
                 if (inputDakika != null) inputDakika.value = "";
+                if (inputKategori != null) inputKategori.value = "Genel";
                 sihirbazAdimi = 0;
             };
         }
@@ -179,9 +181,11 @@ public class SihirbazYonetici : MonoBehaviour
                     bool isRepeating = false;
                     if (toggleTekrarla != null) isRepeating = toggleTekrarla.value;
 
+                    string kategori = (inputKategori != null && !string.IsNullOrEmpty(inputKategori.value)) ? inputKategori.value : "Genel";
+
                     if (gorevKartiYonetici != null)
                     {
-                        gorevKartiYonetici.GorevKartiEkle(bugununTarihi, zamanMetni, geciciGorevAdi, geciciSure.ToString(), false, true, isRepeating);
+                        gorevKartiYonetici.GorevKartiEkle(bugununTarihi, zamanMetni, geciciGorevAdi, geciciSure.ToString(), false, true, isRepeating, false, kategori);
                     }
 
                     // Sihirbazı sıfırla ve kapat
@@ -191,6 +195,7 @@ public class SihirbazYonetici : MonoBehaviour
                     if (inputSihirbazDeger != null) inputSihirbazDeger.value = "";
                     if (inputSaat != null) inputSaat.value = "";
                     if (inputDakika != null) inputDakika.value = "";
+                    if (inputKategori != null) inputKategori.value = "Genel";
                     if (toggleTekrarla != null) toggleTekrarla.value = false;
                     sihirbazAdimi = 0;
                 }

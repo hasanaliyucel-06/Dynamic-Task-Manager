@@ -53,10 +53,10 @@ public class PageNavigator : MonoBehaviour
         btnSistem = root.Q<Button>("btnSistem");
 
         // Tab event'leri
-        if (btnSohbet != null) btnSohbet.clicked += () => SayfaDegistir(0);
-        if (btnGorevler != null) btnGorevler.clicked += () => SayfaDegistir(1);
-        if (btnDisiplin != null) btnDisiplin.clicked += () => SayfaDegistir(2);
-        if (btnSistem != null) btnSistem.clicked += () => SayfaDegistir(3);
+        if (btnSohbet != null) btnSohbet.clicked += OnSohbetClicked;
+        if (btnGorevler != null) btnGorevler.clicked += OnGorevlerClicked;
+        if (btnDisiplin != null) btnDisiplin.clicked += OnDisiplinClicked;
+        if (btnSistem != null) btnSistem.clicked += OnSistemClicked;
 
         // Alt yöneticileri bul veya oluştur, sonra başlat
         gorevKartiYonetici = GetComponent<GorevKartiYonetici>();
@@ -81,6 +81,68 @@ public class PageNavigator : MonoBehaviour
 
         // İlk sayfa: Sohbet
         SayfaDegistir(0);
+
+        // Swipe gesture'ları kur
+        SwipeKur(root);
+    }
+
+    void OnDisable()
+    {
+        // Event sızıntısını önle: tüm listener'ları temizle
+        if (btnSohbet != null) btnSohbet.clicked -= OnSohbetClicked;
+        if (btnGorevler != null) btnGorevler.clicked -= OnGorevlerClicked;
+        if (btnDisiplin != null) btnDisiplin.clicked -= OnDisiplinClicked;
+        if (btnSistem != null) btnSistem.clicked -= OnSistemClicked;
+    }
+
+    // Named event handler metotları (OnDisable'da temizlenebilir)
+    private void OnSohbetClicked() => SayfaDegistir(0);
+    private void OnGorevlerClicked() => SayfaDegistir(1);
+    private void OnDisiplinClicked() => SayfaDegistir(2);
+    private void OnSistemClicked() => SayfaDegistir(3);
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // SWIPE GESTURE SİSTEMİ
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    private int aktifSayfaIndex = 0;
+    private const int TOPLAM_SAYFA = 4;
+    private Vector2 swipeBaslangic;
+    private bool swipeAktif = false;
+    private const float SWIPE_ESIK = 80f; // Minimum swipe mesafesi (piksel)
+
+    private void SwipeKur(VisualElement root)
+    {
+        root.RegisterCallback<PointerDownEvent>(evt => {
+            swipeBaslangic = evt.position;
+            swipeAktif = true;
+        });
+
+        root.RegisterCallback<PointerUpEvent>(evt => {
+            if (!swipeAktif) return;
+            swipeAktif = false;
+
+            Vector2 swipeBitis = evt.position;
+            float deltaX = swipeBitis.x - swipeBaslangic.x;
+            float deltaY = swipeBitis.y - swipeBaslangic.y;
+
+            // Yatay swipe'ın dikey swipe'dan belirgin olması gerekir
+            if (Mathf.Abs(deltaX) > SWIPE_ESIK && Mathf.Abs(deltaX) > Mathf.Abs(deltaY) * 1.5f)
+            {
+                if (deltaX < 0)
+                {
+                    // Sola kaydırma → Sonraki sayfa
+                    int yeniIndex = Mathf.Min(aktifSayfaIndex + 1, TOPLAM_SAYFA - 1);
+                    if (yeniIndex != aktifSayfaIndex) SayfaDegistir(yeniIndex);
+                }
+                else
+                {
+                    // Sağa kaydırma → Önceki sayfa
+                    int yeniIndex = Mathf.Max(aktifSayfaIndex - 1, 0);
+                    if (yeniIndex != aktifSayfaIndex) SayfaDegistir(yeniIndex);
+                }
+            }
+        });
     }
 
     /// <summary>
@@ -89,6 +151,12 @@ public class PageNavigator : MonoBehaviour
     /// </summary>
     private void SayfaDegistir(int sayfaIndex)
     {
+        if (aktifSayfaIndex != sayfaIndex && SesYonetici.Instance != null)
+        {
+            SesYonetici.Instance.PlayClick();
+        }
+
+        aktifSayfaIndex = sayfaIndex;
         if (pageSohbet != null) pageSohbet.style.display = (sayfaIndex == 0) ? DisplayStyle.Flex : DisplayStyle.None;
         if (pageGorevler != null) pageGorevler.style.display = (sayfaIndex == 1) ? DisplayStyle.Flex : DisplayStyle.None;
         if (pageDisiplin != null) pageDisiplin.style.display = (sayfaIndex == 2) ? DisplayStyle.Flex : DisplayStyle.None;
@@ -128,11 +196,11 @@ public class PageNavigator : MonoBehaviour
     /// <summary>
     /// Proxy: Görev kartı ekleme isteğini GorevKartiYonetici'ye yönlendirir.
     /// </summary>
-    public void GorevKartiEkle(string tarih, string saat, string gorevAdi, string sure = "", bool katiMi = false, bool kaydet = true)
+    public void GorevKartiEkle(string tarih, string saat, string gorevAdi, string sure = "", bool katiMi = false, bool kaydet = true, bool isRepeating = false, bool isAlreadyCompleted = false, string kategori = "Genel")
     {
         if (gorevKartiYonetici != null)
         {
-            gorevKartiYonetici.GorevKartiEkle(tarih, saat, gorevAdi, sure, katiMi, kaydet);
+            gorevKartiYonetici.GorevKartiEkle(tarih, saat, gorevAdi, sure, katiMi, kaydet, isRepeating, isAlreadyCompleted, kategori);
         }
     }
 

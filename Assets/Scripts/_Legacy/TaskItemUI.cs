@@ -8,10 +8,10 @@ public class TaskItemUI : MonoBehaviour
     public TextMeshProUGUI durationText;
     public Button deleteButton;
 
-    private Task currentTask;
+    private GorevData currentTask;
     private ScheduleManager scheduleManager;
 
-    public void Setup(Task task, ScheduleManager manager)
+    public void Setup(GorevData task, ScheduleManager manager)
     {
         currentTask = task;
         scheduleManager = manager;

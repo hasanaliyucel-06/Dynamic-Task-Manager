@@ -4570,6 +4570,8 @@ MonoBehaviour:
     isStrictBlock: 1
     isCompleted: 0
     isRepeating: 0
+    kategori: 
+    hatirlaticiDakikaOnce: 0
   - taskDate: 
     taskTime: 
     taskName: "Elektro Gitar Prati\u011Fi"
@@ -4577,6 +4579,8 @@ MonoBehaviour:
     isStrictBlock: 0
     isCompleted: 0
     isRepeating: 0
+    kategori: 
+    hatirlaticiDakikaOnce: 0
   - taskDate: 
     taskTime: 
     taskName: Yemek
@@ -4584,6 +4588,8 @@ MonoBehaviour:
     isStrictBlock: 1
     isCompleted: 0
     isRepeating: 0
+    kategori: 
+    hatirlaticiDakikaOnce: 0
   - taskDate: 
     taskTime: 
     taskName: Fitness
@@ -4591,6 +4597,8 @@ MonoBehaviour:
     isStrictBlock: 0
     isCompleted: 0
     isRepeating: 0
+    kategori: 
+    hatirlaticiDakikaOnce: 0
   TotalDelay: 0
   onScheduleUpdated:
     m_PersistentCalls:

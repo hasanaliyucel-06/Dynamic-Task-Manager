@@ -5,8 +5,9 @@ using UnityEngine.Events;
 
 
 // Bu sınıfı Unity Inspector'da görebilmek için Serializable olarak ekliyoruz
+// NOT: C#'ın System.Threading.Tasks.Task ile çakışmasını önlemek için "GorevData" kullanılıyor.
 [System.Serializable]
-public class Task
+public class GorevData
 {
     public string taskDate;
     public string taskTime;
@@ -15,9 +16,13 @@ public class Task
     public bool isStrictBlock;
     public bool isCompleted;
     public bool isRepeating;
+    
+    // Faz 3 Yeni Özellikleri
+    public string kategori;
+    public int hatirlaticiDakikaOnce;
 
     // Basit bir constructor (isteğe bağlı)
-    public Task(string date, string time, string name, int duration, bool strictBlock, bool completed = false, bool repeating = false)
+    public GorevData(string date, string time, string name, int duration, bool strictBlock, bool completed = false, bool repeating = false, string kat = "Genel", int hatirlatici = 15)
     {
         taskDate = date;
         taskTime = time;
@@ -26,6 +31,8 @@ public class Task
         isStrictBlock = strictBlock;
         isCompleted = completed;
         isRepeating = repeating;
+        kategori = kat;
+        hatirlaticiDakikaOnce = hatirlatici;
     }
 }
 
@@ -33,13 +40,13 @@ public class Task
 [System.Serializable]
 public class TaskWrapper
 {
-    public List<Task> tasks;
+    public List<GorevData> tasks;
 }
 
 public class ScheduleManager : MonoBehaviour
 {
-    // Task objelerinin tutulduğu liste
-    public List<Task> tasks = new List<Task>();
+    // GorevData objelerinin tutulduğu liste
+    public List<GorevData> tasks = new List<GorevData>();
     
     // Toplam yaşanan gecikmeyi tutar
     public int TotalDelay = 0;
@@ -94,7 +101,7 @@ public class ScheduleManager : MonoBehaviour
                 break;
             }
 
-            Task currentTask = tasks[i];
+            GorevData currentTask = tasks[i];
 
             // Eğer görev zaten tamamlandıysa, ona dokunmayalım
             if (currentTask.isCompleted)
@@ -160,7 +167,7 @@ public class ScheduleManager : MonoBehaviour
 
     public void RemoveTask(string taskName)
     {
-        Task taskToRemove = tasks.Find(t => t.taskName == taskName);
+        GorevData taskToRemove = tasks.Find(t => t.taskName == taskName);
         if (taskToRemove != null)
         {
             tasks.Remove(taskToRemove);
@@ -168,22 +175,48 @@ public class ScheduleManager : MonoBehaviour
         }
     }
 
-    public void UpdateTask(string oldName, string newName, string newTime, int newDuration)
+    /// <summary>
+    /// Görevi tamamlandı olarak işaretler (silmez, kalıcı olarak kaydeder).
+    /// </summary>
+    public void MarkTaskCompleted(string taskName)
     {
-        Task taskToUpdate = tasks.Find(t => t.taskName == oldName);
-        if (taskToUpdate != null)
+        GorevData task = tasks.Find(t => t.taskName == taskName && !t.isCompleted);
+        if (task != null)
         {
-            taskToUpdate.taskName = newName;
-            taskToUpdate.taskTime = newTime;
-            taskToUpdate.durationMinutes = newDuration;
+            task.isCompleted = true;
             SaveTasks();
             onScheduleUpdated?.Invoke();
         }
     }
 
-    public void AddTask(string tarih, string time, string taskName, int duration, bool isStrict = false, bool isRepeating = false)
+    public void UpdateTask(string oldName, string newName, string newTime, int newDuration, string yeniKategori = "Genel")
     {
-        Task newTask = new Task(tarih, time, taskName, duration, isStrict, false, isRepeating);
+        GorevData taskToUpdate = tasks.Find(t => t.taskName == oldName);
+        if (taskToUpdate != null)
+        {
+            taskToUpdate.taskName = newName;
+            taskToUpdate.taskTime = newTime;
+            taskToUpdate.durationMinutes = newDuration;
+            taskToUpdate.kategori = yeniKategori;
+            SaveTasks();
+            onScheduleUpdated?.Invoke();
+        }
+    }
+
+    /// <summary>
+    /// Yeni görev ekler. Aynı tarih+saat+isimde görev zaten varsa çift kayıt oluşturmaz.
+    /// </summary>
+    public void AddTask(string tarih, string time, string taskName, int duration, bool isStrict = false, bool isRepeating = false, string kategori = "Genel", int hatirlatici = 15)
+    {
+        // Çift kayıt kontrolü: Aynı tarih, saat ve isimdeki görev zaten varsa ekleme
+        bool zatenVar = tasks.Exists(t => t.taskDate == tarih && t.taskTime == time && t.taskName == taskName);
+        if (zatenVar)
+        {
+            Debug.Log($"[ScheduleManager] Görev zaten mevcut, çift kayıt engellendi: {taskName} ({tarih} {time})");
+            return;
+        }
+
+        GorevData newTask = new GorevData(tarih, time, taskName, duration, isStrict, false, isRepeating, kategori, hatirlatici);
         tasks.Add(newTask);
 
         onScheduleUpdated?.Invoke();
@@ -219,7 +252,7 @@ public class ScheduleManager : MonoBehaviour
                 bool degisiklikVar = false;
 
                 // Sadece bugünden önceki tekrarlayan görevleri bul ve bugüne kopyala
-                List<Task> eklenecekler = new List<Task>();
+                List<GorevData> eklenecekler = new List<GorevData>();
                 foreach (var t in this.tasks)
                 {
                     if (t.isRepeating && t.taskDate != bugunTarih)
@@ -228,7 +261,7 @@ public class ScheduleManager : MonoBehaviour
                         bool bugunVarMi = this.tasks.Exists(x => x.taskDate == bugunTarih && x.taskName == t.taskName);
                         if (!bugunVarMi)
                         {
-                            eklenecekler.Add(new Task(bugunTarih, t.taskTime, t.taskName, t.durationMinutes, t.isStrictBlock, false, true));
+                            eklenecekler.Add(new GorevData(bugunTarih, t.taskTime, t.taskName, t.durationMinutes, t.isStrictBlock, false, true, t.kategori, t.hatirlaticiDakikaOnce));
                             degisiklikVar = true;
                         }
                     }
@@ -241,12 +274,35 @@ public class ScheduleManager : MonoBehaviour
                 }
                 // --- SON ---
 
+                // --- ESKİ GÖREV TEMİZLİĞİ ---
+                // Tekrarlanmayan ve 7 günden eski görevleri otomatik sil (veri şişmesini önle)
+                System.DateTime yediGunOnce = System.DateTime.Now.Date.AddDays(-7);
+                int kaldirilanSayi = this.tasks.RemoveAll(t => {
+                    if (t.isRepeating) return false; // Tekrarlayan görevleri silme
+                    System.DateTime gorevTarihi;
+                    if (System.DateTime.TryParseExact(t.taskDate, "dd.MM.yyyy", null, System.Globalization.DateTimeStyles.None, out gorevTarihi))
+                    {
+                        return gorevTarihi.Date < yediGunOnce;
+                    }
+                    return false;
+                });
+                if (kaldirilanSayi > 0)
+                {
+                    Debug.Log($"[ScheduleManager] {kaldirilanSayi} eski görev otomatik temizlendi.");
+                    SaveTasks();
+                }
+                // --- SON ---
+
                 Debug.Log("[ScheduleManager] Görevler başarıyla yüklendi.");
                 
+                // SADECE bugünün görevlerini UI'a ekle (Tarih filtresi)
                 PageNavigator navigator = FindFirstObjectByType<PageNavigator>();
                 if (navigator != null) {
                     foreach (var gorev in this.tasks) {
-                        navigator.GorevKartiEkle(gorev.taskDate, gorev.taskTime, gorev.taskName, gorev.durationMinutes.ToString(), gorev.isStrictBlock, false); 
+                        if (gorev.taskDate == bugunTarih)
+                        {
+                            navigator.GorevKartiEkle(gorev.taskDate, gorev.taskTime, gorev.taskName, gorev.durationMinutes.ToString(), gorev.isStrictBlock, false, gorev.isRepeating, gorev.isCompleted, gorev.kategori);
+                        }
                     }
                 }
                 return;
@@ -261,8 +317,61 @@ public class ScheduleManager : MonoBehaviour
         
         // İlk açılış (Hiç kayıt yoksa)
         tasks.Clear();
-        // Varsayılan görevleri sadece ilk kurulumda göstermek istiyorsak buraya koyabiliriz.
-        // Ama kullanıcı 'hepsini sil' dediğinde de burası tetiklenmesin diye SaveTasks boş kaydedilmelidir.
-        // Artık boş liste gelince geri dolmayacak.
+    }
+
+    /// <summary>
+    /// Bugün kaç görevin tamamlandığını döndürür.
+    /// </summary>
+    public int BugununTamamlananSayisi()
+    {
+        string bugunTarih = System.DateTime.Now.ToString("dd.MM.yyyy");
+        int sayi = 0;
+        foreach (var t in tasks)
+        {
+            if (t.taskDate == bugunTarih && t.isCompleted) sayi++;
+        }
+        return sayi;
+    }
+
+    /// <summary>
+    /// Bugün toplam kaç görev olduğunu döndürür.
+    /// </summary>
+    public int BugununToplamSayisi()
+    {
+        string bugunTarih = System.DateTime.Now.ToString("dd.MM.yyyy");
+        int sayi = 0;
+        foreach (var t in tasks)
+        {
+            if (t.taskDate == bugunTarih) sayi++;
+        }
+        return sayi;
+    }
+
+    /// <summary>
+    /// Son 7 günün tamamlanma oranını döndürür (Yüzde 0-100)
+    /// </summary>
+    public float HaftalikBasariOrani()
+    {
+        System.DateTime bugun = System.DateTime.Now.Date;
+        System.DateTime yediGunOnce = bugun.AddDays(-7);
+        
+        int toplamGorev = 0;
+        int bitenGorev = 0;
+
+        foreach (var t in tasks)
+        {
+            if (System.DateTime.TryParseExact(t.taskDate, "dd.MM.yyyy", null, System.Globalization.DateTimeStyles.None, out System.DateTime dt))
+            {
+                if (dt.Date >= yediGunOnce && dt.Date <= bugun)
+                {
+                    toplamGorev++;
+                    if (t.isCompleted) bitenGorev++;
+                }
+            }
+        }
+
+        if (toplamGorev == 0) return 0f;
+        return ((float)bitenGorev / toplamGorev) * 100f;
     }
 }
+

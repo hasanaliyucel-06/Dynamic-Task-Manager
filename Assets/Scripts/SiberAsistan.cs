@@ -65,7 +65,7 @@ public class SiberAsistan : MonoBehaviour
         
         string locationContext = "";
         if (locManager != null && locManager.locationReady)
-            locationContext = $"[Şu anki konumum: Enlem {locManager.latitude}, Boylam {locManager.longitude}. Aydın.] ";
+            locationContext = $"[Şu anki konumum: Enlem {locManager.latitude}, Boylam {locManager.longitude}.] ";
 
         string todayContext = "Bugünün Tarihi: " + System.DateTime.Now.ToString("dd.MM.yyyy") + "\n";
         // 1. Mevcut Görevleri Okuma

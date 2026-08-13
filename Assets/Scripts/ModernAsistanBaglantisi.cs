@@ -23,6 +23,7 @@ public class ModernAsistanBaglantisi : MonoBehaviour
     private Label lblStatus;
     private VisualElement inputContainer;
     private VisualElement emptySohbet;
+    private TextField inputSohbetArama;
 
     public SiberAsistan siberAsistan; 
 
@@ -48,6 +49,14 @@ public class ModernAsistanBaglantisi : MonoBehaviour
             gonderButonu.clicked += MesajGonderildi;
         }
 
+        inputSohbetArama = root.Q<TextField>("inputSohbetArama");
+        if (inputSohbetArama != null)
+        {
+            inputSohbetArama.RegisterValueChangedCallback(evt => {
+                SohbetiFiltrele(evt.newValue);
+            });
+        }
+
         SohbetGecmisiniYukle();
     }
 
@@ -67,6 +76,31 @@ public class ModernAsistanBaglantisi : MonoBehaviour
             else
             {
                 sohbetGecmisi = new SohbetGecmisi();
+            }
+        }
+    }
+
+    private void SohbetiFiltrele(string query)
+    {
+        if (scrollSohbet == null) return;
+        
+        string kucukQuery = query?.ToLower() ?? "";
+        
+        foreach (var child in scrollSohbet.Children())
+        {
+            // Typing indicator'ı gizleme
+            if (child.name == "typingIndicator") continue;
+
+            if (child is Label lbl)
+            {
+                if (string.IsNullOrEmpty(kucukQuery) || lbl.text.ToLower().Contains(kucukQuery))
+                {
+                    child.style.display = DisplayStyle.Flex;
+                }
+                else
+                {
+                    child.style.display = DisplayStyle.None;
+                }
             }
         }
     }
@@ -122,6 +156,12 @@ public class ModernAsistanBaglantisi : MonoBehaviour
         if (!kullaniciMi) {
             isRequestActive = false;
             if (gonderButonu != null) gonderButonu.SetEnabled(true);
+            
+            // Yeni gelen bir asistan mesajıysa ses çal
+            if (kaydet && SesYonetici.Instance != null)
+            {
+                SesYonetici.Instance.PlayMessageReceived();
+            }
         }
 
         if (scrollSohbet == null) return;
@@ -178,13 +218,20 @@ public class ModernAsistanBaglantisi : MonoBehaviour
         }
     }
 
+    // Typing indicator referansı
+    private VisualElement typingIndicator;
+    private IVisualElementScheduledItem typingAnimTimer;
+
     public void DurumYaziyorYap() 
     { 
         if(lblStatus != null) 
         { 
             lblStatus.text = "Yazıyor..."; 
             lblStatus.style.color = new StyleColor(Color.yellow); 
-        } 
+        }
+
+        // Typing indicator göster
+        GosterTypingIndicator();
     }
 
     public void DurumCevrimiciYap() {
@@ -199,5 +246,72 @@ public class ModernAsistanBaglantisi : MonoBehaviour
                 lblStatus.style.color = new StyleColor(Color.green);
             }
         }
+
+        // Typing indicator kaldır
+        GizleTypingIndicator();
+    }
+
+    /// <summary>
+    /// Animasyonlu typing indicator (3 nokta) oluşturur ve sohbete ekler.
+    /// </summary>
+    private void GosterTypingIndicator()
+    {
+        if (scrollSohbet == null) return;
+        
+        // Zaten varsa tekrar ekleme
+        if (typingIndicator != null) return;
+
+        if (emptySohbet != null)
+        {
+            emptySohbet.style.display = DisplayStyle.None;
+        }
+
+        typingIndicator = new VisualElement();
+        typingIndicator.AddToClassList("typing-indicator");
+        typingIndicator.name = "typingIndicator";
+
+        VisualElement dot1 = new VisualElement();
+        dot1.AddToClassList("typing-dot");
+        VisualElement dot2 = new VisualElement();
+        dot2.AddToClassList("typing-dot");
+        VisualElement dot3 = new VisualElement();
+        dot3.AddToClassList("typing-dot");
+        dot3.style.marginRight = 0;
+
+        typingIndicator.Add(dot1);
+        typingIndicator.Add(dot2);
+        typingIndicator.Add(dot3);
+
+        scrollSohbet.Add(typingIndicator);
+
+        // Animasyonlu nokta efekti
+        int animFrame = 0;
+        VisualElement[] dots = { dot1, dot2, dot3 };
+
+        typingAnimTimer = typingIndicator.schedule.Execute(() => {
+            for (int i = 0; i < dots.Length; i++)
+            {
+                dots[i].style.opacity = (i == animFrame % 3) ? 1f : 0.3f;
+                dots[i].style.scale = (i == animFrame % 3) 
+                    ? new StyleScale(new Scale(new Vector3(1.3f, 1.3f, 1f)))
+                    : new StyleScale(new Scale(Vector3.one));
+            }
+            animFrame++;
+        }).Every(400);
+
+        // En alta kaydır
+        scrollSohbet.schedule.Execute(() => {
+            scrollSohbet.ScrollTo(typingIndicator);
+        }).StartingIn(50);
+    }
+
+    private void GizleTypingIndicator()
+    {
+        if (typingIndicator != null)
+        {
+            typingIndicator.RemoveFromHierarchy();
+            typingIndicator = null;
+        }
+        typingAnimTimer = null;
     }
 }

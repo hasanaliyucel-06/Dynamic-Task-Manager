@@ -42,19 +42,33 @@ public class BildirimYonetici : MonoBehaviour
     {
         if (scheduleManager == null || bildirimBanner == null) return;
 
-        string bugun = DateTime.Now.ToString("dd.MM.yyyy");
-        string suAnSaat = DateTime.Now.ToString("HH:mm");
+        DateTime simdi = DateTime.Now;
+        string bugun = simdi.ToString("dd.MM.yyyy");
 
         foreach (var gorev in scheduleManager.tasks)
         {
-            if (!gorev.isCompleted && gorev.taskDate == bugun && gorev.taskTime == suAnSaat)
+            if (!gorev.isCompleted && gorev.taskDate == bugun)
             {
-                // Zaten bildirim gösterildiyse tekrar etme
-                string gorevKey = gorev.taskName + "_" + gorev.taskDate + "_" + gorev.taskTime;
-                if (!bildirilenGorevler.Contains(gorevKey))
+                if (DateTime.TryParseExact(gorev.taskTime, "HH:mm", null, System.Globalization.DateTimeStyles.None, out DateTime gorevSaati))
                 {
-                    bildirilenGorevler.Add(gorevKey);
-                    GosterBildirim("Sıradaki Görev:\n" + gorev.taskName);
+                    // Görev saatini bugünün tarihine uyarla
+                    DateTime gercekGorevSaati = new DateTime(simdi.Year, simdi.Month, simdi.Day, gorevSaati.Hour, gorevSaati.Minute, 0);
+                    
+                    // Hatırlatıcı dakikasını çıkar
+                    DateTime bildirimSaati = gercekGorevSaati.AddMinutes(-gorev.hatirlaticiDakikaOnce);
+
+                    // Eğer şu anki zaman, bildirim saatine eşit veya onu geçmişse (en fazla 1 dakika geçmişse)
+                    if (simdi >= bildirimSaati && simdi <= bildirimSaati.AddMinutes(1))
+                    {
+                        // Zaten bildirim gösterildiyse tekrar etme
+                        string gorevKey = gorev.taskName + "_" + gorev.taskDate + "_" + gorev.taskTime;
+                        if (!bildirilenGorevler.Contains(gorevKey))
+                        {
+                            bildirilenGorevler.Add(gorevKey);
+                            string mesaj = $"Sıradaki Görev ({gorev.hatirlaticiDakikaOnce} dk kaldı):\n{gorev.taskName}";
+                            GosterBildirim(mesaj);
+                        }
+                    }
                 }
             }
         }
@@ -68,8 +82,17 @@ public class BildirimYonetici : MonoBehaviour
             // Banner'ı aşağı kaydırarak göster
             bildirimBanner.style.top = 20; 
             
-            // Eğer isterseniz burada AudioSource ile bir "Ding!" sesi çalabilirsiniz.
-            // GetComponent<AudioSource>().Play();
+            // 8 saniye sonra otomatik kapat
+            bildirimBanner.schedule.Execute(() => {
+                bildirimBanner.style.top = -300;
+            }).StartingIn(8000);
+            
+            // Ses ve Titreşim
+            if (SesYonetici.Instance != null)
+            {
+                SesYonetici.Instance.PlayNotification();
+                SesYonetici.Instance.Vibrate(true); // Ağır titreşim
+            }
         }
     }
 }
