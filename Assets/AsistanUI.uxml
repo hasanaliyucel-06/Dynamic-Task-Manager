@@ -8,10 +8,10 @@
             </ui:VisualElement>
             <ui:VisualElement style="flex-grow: 1;">
                 <ui:VisualElement style="flex-direction: row; padding: 10px; background-color: #111827; border-bottom-width: 1px; border-bottom-color: #1F293B;">
-                    <ui:TextField name="inputSohbetArama" placeholder-text="Sohbette ara..." style="flex-grow: 1; background-color: #1F293B; border-radius: 8px; color: white; padding: 5px;" />
+                    <ui:TextField name="inputSohbetArama" placeholder-text="Sohbette ara..." style="flex-grow: 1;" />
                 </ui:VisualElement>
-                <ui:ScrollView name="scrollSohbet" class="chat-ekrani" style="position: absolute; width: 100%; height: 100%; top: 50px;"/>
-                <ui:VisualElement name="emptySohbet" style="position: absolute; width: 100%; height: 100%; align-items: center; justify-content: center; padding: 20px; top: 50px;">
+                <ui:ScrollView name="scrollSohbet" class="chat-ekrani" style="position: absolute; width: 100%; top: 50px; bottom: 0;"/>
+                <ui:VisualElement name="emptySohbet" style="position: absolute; width: 100%; top: 50px; bottom: 0; align-items: center; justify-content: center; padding: 20px;">
                     <ui:Label text="🤖" style="font-size: 48px; margin-bottom: 10px;" />
                     <ui:Label text="Merhaba Patron! Bana gününü planlatabilir veya soru sorabilirsin." style="color: #9CA3AF; font-size: 14px; -unity-text-align: middle-center; white-space: normal;" />
                 </ui:VisualElement>
@@ -22,11 +22,14 @@
             </ui:VisualElement>
         </ui:VisualElement>
         <ui:VisualElement name="Page_Gorevler" class="page" style="display: none;">
-            <ui:VisualElement class="top-bar">
-                <ui:Label text="GÖREV YÖNETİMİ" class="header-title"/>
-                <ui:Label text="0 Aktif Görev" class="header-status" style="color: rgb(96, 165, 250);"/>
+            <ui:VisualElement class="top-bar" style="flex-direction: row; justify-content: space-between; align-items: center; padding-right: 15px;">
+                <ui:VisualElement>
+                    <ui:Label text="GÖREV YÖNETİMİ" class="header-title"/>
+                    <ui:Label text="0 Aktif Görev" class="header-status" style="color: #60A5FA;"/>
+                </ui:VisualElement>
+                <ui:Button name="Btn_GecmisGorevler" text="Geçmiş" style="background-color: transparent; color: #60A5FA; border-width: 0; -unity-font-style: bold; font-size: 14px;" />
             </ui:VisualElement>
-            <ui:VisualElement style="background-color: rgba(0, 0, 0, 0); border-top-width: 1px; border-bottom-width: 1px; border-left-width: 1px; border-right-width: 1px; border-color: #333333; height: 15px; border-radius: 5px; margin: 10px 15px;">
+            <ui:VisualElement style="background-color: transparent; border-top-width: 1px; border-bottom-width: 1px; border-left-width: 1px; border-right-width: 1px; border-color: #333333; height: 15px; border-radius: 5px; margin: 10px 15px;">
                 <ui:VisualElement name="progressBarFill" style="width: 0%; height: 100%; background-color: #00FF00; border-radius: 5px;" />
             </ui:VisualElement>
             <ui:VisualElement style="flex-grow: 1;">
@@ -106,9 +109,9 @@
                     <ui:VisualElement style="flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                         <ui:Label text="Tema:" style="color: white; font-size: 14px;" />
                         <ui:VisualElement style="flex-direction: row;">
-                            <ui:Button name="btnTemaKoyu" text="Koyu" style="background-color: #374151; color: white; border-radius: 4px; padding: 5px; margin-right: 5px; border-width: 0;" />
-                            <ui:Button name="btnTemaAcik" text="Açık" style="background-color: #F3F4F6; color: #111827; border-radius: 4px; padding: 5px; margin-right: 5px; border-width: 0;" />
-                            <ui:Button name="btnTemaNeon" text="Neon" style="background-color: #FF00FF; color: white; border-radius: 4px; padding: 5px; border-width: 0; -unity-font-style: bold;" />
+                            <ui:Button name="btnTemaKoyu" text="Koyu" class="theme-btn" />
+                            <ui:Button name="btnTemaAcik" text="Açık" class="theme-btn" />
+                            <ui:Button name="btnTemaNeon" text="Neon" class="theme-btn" />
                         </ui:VisualElement>
                     </ui:VisualElement>
 
@@ -125,6 +128,16 @@
                     <ui:Button name="btnGorevSil" text="Tüm Görevleri Sil" class="premium-buton" style="width: 100%; border-radius: 8px; background-color: #EF4444;" />
                     <ui:Label name="lblVeriDurum" text="" style="color: #10B981; font-size: 12px; margin-top: 5px; -unity-text-align: middle-center;" />
                 </ui:VisualElement>
+
+                <!-- Yedekleme -->
+                <ui:VisualElement style="background-color: #1c2331; border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+                    <ui:Label text="YEDEKLEME (İÇE/DIŞA AKTAR)" style="color: #60A5FA; -unity-font-style: bold; margin-bottom: 10px;" />
+                    <ui:Button name="btnVerileriYedekle" text="Verileri Panoya Kopyala (JSON)" class="premium-buton" style="width: 100%; border-radius: 8px; background-color: #374151; margin-bottom: 10px;" />
+                    <ui:TextField name="inputYedekJSON" text="" multiline="true" style="height: 60px; margin-bottom: 10px; background-color: #0f172a; color: white;" />
+                    <ui:Button name="btnYedektenDon" text="Yedekten Geri Yükle" class="premium-buton" style="width: 100%; border-radius: 8px; background-color: #10B981;" />
+                    <ui:Label name="lblYedekDurum" text="" style="color: #10B981; font-size: 12px; margin-top: 5px; -unity-text-align: middle-center;" />
+                </ui:VisualElement>
+                
                 <!-- Uygulama Bilgisi -->
                 <ui:VisualElement style="background-color: transparent; align-items: center; margin-top: 20px;">
                     <ui:Label text="Siber Asistan" style="color: #9CA3AF; font-size: 14px; -unity-font-style: bold;" />
@@ -141,7 +154,7 @@
     </ui:VisualElement>
     
     <!-- Görev Sihirbazı Overlay -->
-    <ui:VisualElement name="gorevSihirbaziOverlay" style="position: absolute; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center;">
+    <ui:VisualElement name="gorevSihirbaziOverlay" style="position: absolute; width: 100%; height: 100%; background-color: #000000CC; display: none; align-items: center; justify-content: center;">
         <ui:VisualElement name="popupKutu" style="background-color: #1c2331; border-radius: 12px; padding: 20px; width: 80%;">
             <ui:Label name="lblSihirbazBaslik" text="Görev Süresi (Dk):" style="color: #00FFFF; -unity-font-style: bold; margin-bottom: 10px; font-size: 14px;" />
             <ui:TextField name="inputSihirbazDeger" style="margin-top: 15px; margin-bottom: 20px; background-color: #2a354b; color: white; border-radius: 6px; padding: 10px; font-size: 16px;" />
@@ -150,7 +163,19 @@
                 <ui:Label text=":" style="font-size: 20px; color: #00FFFF; -unity-font-style: bold; margin-left: 10px; margin-right: 10px;" />
                 <ui:TextField name="inputDakika" max-length="2" style="width: 50px; font-size: 16px; -unity-text-align: middle-center;" />
             </ui:VisualElement>
-            <ui:TextField name="inputKategori" value="Genel" style="margin-top: 15px; margin-bottom: 20px; background-color: #2a354b; color: white; border-radius: 6px; padding: 10px; font-size: 16px;" />
+            <ui:TextField name="inputKategori" value="Genel" style="margin-top: 15px; margin-bottom: 10px; background-color: #2a354b; color: white; border-radius: 6px; padding: 10px; font-size: 16px;" />
+            
+            <!-- Öncelik Seçimi -->
+            <ui:Label text="Öncelik:" style="color: #9CA3AF; margin-bottom: 5px; font-size: 12px;" />
+            <ui:VisualElement style="flex-direction: row; justify-content: space-between; margin-bottom: 10px;">
+                <ui:Button name="btnSihirbazOncelikDusuk" text="Düşük" style="flex-grow: 1; border-radius: 6px; background-color: #374151; color: white; border-width: 0;" />
+                <ui:Button name="btnSihirbazOncelikOrta" text="Orta" style="flex-grow: 1; border-radius: 6px; background-color: #60A5FA; color: white; border-width: 0; margin-left: 5px; margin-right: 5px;" />
+                <ui:Button name="btnSihirbazOncelikYuksek" text="Yüksek" style="flex-grow: 1; border-radius: 6px; background-color: #374151; color: white; border-width: 0;" />
+            </ui:VisualElement>
+            
+            <!-- Görev Notları -->
+            <ui:TextField name="inputNotlar" multiline="true" placeholder-text="Görev notu ekle (isteğe bağlı)..." style="margin-bottom: 20px; background-color: #2a354b; color: white; border-radius: 6px; padding: 10px; font-size: 14px; min-height: 50px;" />
+
             <ui:VisualElement style="flex-direction: row; justify-content: space-between;">
                 <ui:Button name="btnSihirbazIptal" text="İPTAL" style="background-color: transparent; color: red; border-width: 0; flex-grow: 1; -unity-font-style: bold;" />
                 <ui:Button name="btnSihirbazOnay" text="İLERİ" style="background-color: #005BB5; color: white; border-radius: 8px; flex-grow: 1; -unity-font-style: bold; padding: 10px;" />
@@ -160,7 +185,7 @@
     </ui:VisualElement>
 
     <!-- Görev Düzenleme Overlay -->
-    <ui:VisualElement name="gorevDuzenleOverlay" style="position: absolute; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center;">
+    <ui:VisualElement name="gorevDuzenleOverlay" style="position: absolute; width: 100%; height: 100%; background-color: #000000CC; display: none; align-items: center; justify-content: center;">
         <ui:VisualElement style="background-color: #1c2331; border-radius: 12px; padding: 20px; width: 90%;">
             <ui:Label text="GÖREV DÜZENLE" style="color: #60A5FA; -unity-font-style: bold; margin-bottom: 15px; font-size: 16px; -unity-text-align: middle-center;" />
             <ui:Label text="Görev Adı:" style="color: #9CA3AF; margin-bottom: 5px;" />
@@ -168,7 +193,20 @@
             <ui:Label text="Süre (Dk):" style="color: #9CA3AF; margin-bottom: 5px;" />
             <ui:TextField name="editGorevSure" style="margin-bottom: 15px; background-color: #2a354b; color: white; border-radius: 6px; padding: 5px; font-size: 14px;" />
             <ui:Label text="Kategori:" style="color: #9CA3AF; margin-bottom: 5px;" />
-            <ui:TextField name="editKategori" style="margin-bottom: 15px; background-color: #2a354b; color: white; border-radius: 6px; padding: 5px; font-size: 14px;" />
+            <ui:TextField name="editKategori" style="margin-bottom: 10px; background-color: #2a354b; color: white; border-radius: 6px; padding: 5px; font-size: 14px;" />
+            
+            <!-- Öncelik Seçimi -->
+            <ui:Label text="Öncelik:" style="color: #9CA3AF; margin-bottom: 5px;" />
+            <ui:VisualElement style="flex-direction: row; justify-content: space-between; margin-bottom: 10px;">
+                <ui:Button name="btnDuzenleOncelikDusuk" text="Düşük" style="flex-grow: 1; border-radius: 6px; background-color: #374151; color: white; border-width: 0;" />
+                <ui:Button name="btnDuzenleOncelikOrta" text="Orta" style="flex-grow: 1; border-radius: 6px; background-color: #60A5FA; color: white; border-width: 0; margin-left: 5px; margin-right: 5px;" />
+                <ui:Button name="btnDuzenleOncelikYuksek" text="Yüksek" style="flex-grow: 1; border-radius: 6px; background-color: #374151; color: white; border-width: 0;" />
+            </ui:VisualElement>
+
+            <!-- Görev Notları -->
+            <ui:Label text="Notlar:" style="color: #9CA3AF; margin-bottom: 5px;" />
+            <ui:TextField name="editNotlar" multiline="true" style="margin-bottom: 15px; background-color: #2a354b; color: white; border-radius: 6px; padding: 5px; font-size: 14px; min-height: 40px;" />
+
             <ui:Label text="Saat (SS:DD):" style="color: #9CA3AF; margin-bottom: 5px;" />
             <ui:VisualElement style="flex-direction: row; margin-bottom: 20px;">
                 <ui:TextField name="editSaat" max-length="2" style="width: 50px; font-size: 14px; -unity-text-align: middle-center;" />
@@ -192,7 +230,7 @@
     </ui:VisualElement>
 
     <!-- Silme Onay Overlay -->
-    <ui:VisualElement name="silmeOnayOverlay" style="position: absolute; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center;">
+    <ui:VisualElement name="silmeOnayOverlay" style="position: absolute; width: 100%; height: 100%; background-color: #000000D9; display: none; align-items: center; justify-content: center;">
         <ui:VisualElement style="background-color: #1c2331; border-radius: 16px; padding: 25px; width: 85%; align-items: center;">
             <ui:Label text="⚠️" style="font-size: 40px; margin-bottom: 10px;" />
             <ui:Label text="SİLME ONAYI" style="color: #EF4444; -unity-font-style: bold; font-size: 18px; margin-bottom: 10px;" />
@@ -208,6 +246,36 @@
     <ui:VisualElement name="undoToast" class="undo-toast" style="display: none;">
         <ui:Label name="lblUndoMetni" text="İşlem geri alınabilir" style="color: white; font-size: 13px; flex-grow: 1; white-space: normal;" />
         <ui:Button name="btnUndo" text="GERİ AL" style="background-color: #FBBF24; color: #1c2331; border-radius: 6px; -unity-font-style: bold; padding: 8px 14px; border-width: 0; font-size: 12px; flex-shrink: 0; margin-left: 10px;" />
+    </ui:VisualElement>
+
+    <!-- Geçmiş Görevler Overlay -->
+    <ui:VisualElement name="gecmisGorevlerOverlay" style="position: absolute; width: 100%; height: 100%; background-color: #000000E6; display: none; padding-top: 50px;">
+        <ui:VisualElement style="flex-direction: row; justify-content: space-between; align-items: center; padding: 15px; border-bottom-width: 1px; border-bottom-color: #374151;">
+            <ui:Label text="Geçmiş Görevler" style="color: white; -unity-font-style: bold; font-size: 18px;" />
+            <ui:Button name="btnGecmisKapat" text="Kapat" style="background-color: transparent; color: #EF4444; border-width: 0; -unity-font-style: bold; font-size: 14px;" />
+        </ui:VisualElement>
+        <ui:ScrollView name="scrollGecmisGorevler" style="flex-grow: 1; padding: 10px;" />
+    </ui:VisualElement>
+
+    <!-- Günlük Özet Overlay -->
+    <ui:VisualElement name="gunlukOzetOverlay" style="position: absolute; width: 100%; height: 100%; background-color: #000000D9; display: none; align-items: center; justify-content: center;">
+        <ui:VisualElement style="background-color: #1c2331; border-radius: 16px; padding: 25px; width: 85%; align-items: center;">
+            <ui:Label text="🏆" style="font-size: 48px; margin-bottom: 10px;" />
+            <ui:Label text="GÜNÜN ÖZETİ" style="color: #FBBF24; -unity-font-style: bold; font-size: 20px; margin-bottom: 15px;" />
+            <ui:Label text="Bugün başarıyla tamamladığın görev sayısı:" style="color: #9CA3AF; font-size: 14px; margin-bottom: 10px; -unity-text-align: middle-center; white-space: normal;" />
+            <ui:Label name="lblOzetAdet" text="0" style="color: #10B981; font-size: 48px; -unity-font-style: bold; margin-bottom: 20px;" />
+            <ui:Button name="btnOzetKapat" text="HARİKA!" style="background-color: #005BB5; color: white; border-radius: 8px; width: 100%; -unity-font-style: bold; padding: 12px; border-width: 0;" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+
+    <!-- Onboarding Overlay -->
+    <ui:VisualElement name="onboardingOverlay" style="position: absolute; width: 100%; height: 100%; background-color: #000000F2; display: none; align-items: center; justify-content: center;">
+        <ui:VisualElement style="background-color: transparent; padding: 25px; width: 90%; align-items: center;">
+            <ui:Label name="lblOnboardingIcon" text="👋" style="font-size: 64px; margin-bottom: 20px;" />
+            <ui:Label name="lblOnboardingBaslik" text="Siber Asistana Hoş Geldin!" style="color: white; -unity-font-style: bold; font-size: 22px; margin-bottom: 15px; -unity-text-align: middle-center; white-space: normal;" />
+            <ui:Label name="lblOnboardingMetin" text="Burada yapay zeka ile günlük planlarını yapabilir, görevlerini yönetebilir ve hedeflerine ulaşabilirsin." style="color: #9CA3AF; font-size: 16px; margin-bottom: 30px; -unity-text-align: middle-center; white-space: normal;" />
+            <ui:Button name="btnOnboardingIleri" text="İLERİ" style="background-color: #007AFF; color: white; border-radius: 25px; width: 80%; -unity-font-style: bold; font-size: 16px; padding: 15px; border-width: 0;" />
+        </ui:VisualElement>
     </ui:VisualElement>
 
 </ui:UXML>

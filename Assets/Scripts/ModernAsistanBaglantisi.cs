@@ -1,17 +1,10 @@
 using UnityEngine;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
+using System.IO;
+using System.Text.RegularExpressions;
 
-[System.Serializable]
-public class SohbetMesaji {
-    public string metin;
-    public bool kullaniciMi;
-}
-
-[System.Serializable]
-public class SohbetGecmisi {
-    public List<SohbetMesaji> mesajlar = new List<SohbetMesaji>();
-}
+// SohbetMesaji ve SohbetGecmisi artık Models/VeriModelleri.cs dosyasında tanımlıdır.
 
 public class ModernAsistanBaglantisi : MonoBehaviour
 {
@@ -62,20 +55,37 @@ public class ModernAsistanBaglantisi : MonoBehaviour
 
     private void SohbetGecmisiniYukle()
     {
+        string path = Path.Combine(Application.persistentDataPath, "chat.json");
+        string json = "";
+
         if (PlayerPrefs.HasKey("SohbetGecmisi"))
         {
-            string json = PlayerPrefs.GetString("SohbetGecmisi");
-            sohbetGecmisi = JsonUtility.FromJson<SohbetGecmisi>(json);
-            if (sohbetGecmisi != null && sohbetGecmisi.mesajlar != null)
+            json = PlayerPrefs.GetString("SohbetGecmisi");
+            try
             {
-                foreach (var msg in sohbetGecmisi.mesajlar)
-                {
-                    EkranaMesajBas(msg.metin, msg.kullaniciMi, false);
-                }
+                File.WriteAllText(path, json);
+                PlayerPrefs.DeleteKey("SohbetGecmisi");
+                PlayerPrefs.Save();
             }
-            else
+            catch { }
+        }
+        else if (File.Exists(path))
+        {
+            try { json = File.ReadAllText(path); } catch { }
+        }
+
+        if (!string.IsNullOrEmpty(json))
+        {
+            sohbetGecmisi = JsonUtility.FromJson<SohbetGecmisi>(json);
+        }
+        
+        if (sohbetGecmisi == null) sohbetGecmisi = new SohbetGecmisi();
+
+        if (sohbetGecmisi.mesajlar != null)
+        {
+            foreach (var msg in sohbetGecmisi.mesajlar)
             {
-                sohbetGecmisi = new SohbetGecmisi();
+                EkranaMesajBas(msg.metin, msg.kullaniciMi, false);
             }
         }
     }
@@ -112,9 +122,16 @@ public class ModernAsistanBaglantisi : MonoBehaviour
         {
             sohbetGecmisi.mesajlar.RemoveRange(0, sohbetGecmisi.mesajlar.Count - 50);
         }
-        string json = JsonUtility.ToJson(sohbetGecmisi);
-        PlayerPrefs.SetString("SohbetGecmisi", json);
-        PlayerPrefs.Save();
+        string json = JsonUtility.ToJson(sohbetGecmisi, true);
+        string path = Path.Combine(Application.persistentDataPath, "chat.json");
+        try
+        {
+            File.WriteAllText(path, json);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError("[Sohbet] Kayıt hatası: " + e.Message);
+        }
     }
 
     void Update()
@@ -172,7 +189,8 @@ public class ModernAsistanBaglantisi : MonoBehaviour
         }
 
         Label label = new Label();
-        label.text = metin;
+        label.text = MarkdownToRichText(metin);
+        label.enableRichText = true;
         label.AddToClassList("mesaj-balonu");
 
         // 1. Tüm mesajlar için ortak stiller
@@ -187,16 +205,14 @@ public class ModernAsistanBaglantisi : MonoBehaviour
         if (kullaniciMi)
         {
             label.AddToClassList("mesaj-kullanici");
-            // 2. Kullanıcı (Sen) stili
-            label.style.backgroundColor = new StyleColor(ColorUtility.TryParseHtmlString("#007AFF", out Color c) ? c : Color.blue);
+            // Kullanıcı (Sen) stili — backgroundColor artık USS'den geliyor
             label.style.borderBottomRightRadius = 0;
             label.style.alignSelf = Align.FlexEnd;
         }
         else
         {
             label.AddToClassList("mesaj-asistan");
-            // 3. Asistan stili
-            label.style.backgroundColor = new StyleColor(ColorUtility.TryParseHtmlString("#1E293B", out Color asistanC) ? asistanC : Color.gray);
+            // Asistan stili — backgroundColor artık USS'den geliyor
             label.style.borderBottomLeftRadius = 0;
             label.style.alignSelf = Align.FlexStart;
         }
@@ -216,6 +232,18 @@ public class ModernAsistanBaglantisi : MonoBehaviour
             sohbetGecmisi.mesajlar.Add(yeniMesaj);
             SohbetiKaydet();
         }
+    }
+
+    private string MarkdownToRichText(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return text;
+        
+        // Kalın: **text** -> <b>text</b>
+        text = Regex.Replace(text, @"\*\*(.*?)\*\*", "<b>$1</b>");
+        // İtalik: *text* -> <i>text</i> (başında/sonunda boşluk veya karakter başı/sonu olacak şekilde)
+        text = Regex.Replace(text, @"(?<=^|\s)\*(.*?)\*(?=\s|$)", "<i>$1</i>");
+        
+        return text;
     }
 
     // Typing indicator referansı

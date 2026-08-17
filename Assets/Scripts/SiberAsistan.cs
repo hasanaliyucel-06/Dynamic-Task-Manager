@@ -11,8 +11,16 @@ public class SiberAsistan : MonoBehaviour
 
     private string aktifProjelerMetni = "";
 
+    // Cache'lenmiş referanslar
+    private ScheduleManager _cachedScheduleManager;
+    private PageNavigator _cachedNavigator;
+    private GorevKartiYonetici _cachedGorevKartiYonetici;
+
     void Start()
     {
+        _cachedScheduleManager = FindFirstObjectByType<ScheduleManager>();
+        _cachedNavigator = FindFirstObjectByType<PageNavigator>();
+        _cachedGorevKartiYonetici = FindFirstObjectByType<GorevKartiYonetici>();
         AktifProjeleriOku();
     }
 
@@ -24,24 +32,30 @@ public class SiberAsistan : MonoBehaviour
     public void AktifProjeleriOku()
     {
         aktifProjelerMetni = "";
-        if (PlayerPrefs.HasKey("AktifHedefler"))
+        string path = System.IO.Path.Combine(Application.persistentDataPath, "goals.json");
+        if (System.IO.File.Exists(path))
         {
-            string json = PlayerPrefs.GetString("AktifHedefler");
-            HedefListesiWrapper wrapper = JsonUtility.FromJson<HedefListesiWrapper>(json);
-            if (wrapper != null && wrapper.hedefler != null)
+            string json = "";
+            try { json = System.IO.File.ReadAllText(path); } catch { }
+            
+            if (!string.IsNullOrEmpty(json))
             {
-                foreach (var hedef in wrapper.hedefler)
+                HedefListesiWrapper wrapper = JsonUtility.FromJson<HedefListesiWrapper>(json);
+                if (wrapper != null && wrapper.hedefler != null)
                 {
-                    System.DateTime baslangic;
-                    if (System.DateTime.TryParseExact(hedef.baslangicTarihi, "dd.MM.yyyy", null, System.Globalization.DateTimeStyles.None, out baslangic))
+                    foreach (var hedef in wrapper.hedefler)
                     {
-                        System.DateTime bitisTarihi = baslangic.AddDays(hedef.kalanGun);
-                        // Bitiş tarihi henüz geçmemişse hedef AKTİF
-                        if (bitisTarihi.Date >= System.DateTime.Now.Date)
+                        System.DateTime baslangic;
+                        if (System.DateTime.TryParseExact(hedef.baslangicTarihi, "dd.MM.yyyy", null, System.Globalization.DateTimeStyles.None, out baslangic))
                         {
-                            int kalanGun = (int)(bitisTarihi.Date - System.DateTime.Now.Date).TotalDays;
-                            if (!string.IsNullOrEmpty(aktifProjelerMetni)) aktifProjelerMetni += " | ";
-                            aktifProjelerMetni += $"Hedef: {hedef.hedefAdi}, Kalan Gün: {kalanGun}";
+                            System.DateTime bitisTarihi = baslangic.AddDays(hedef.kalanGun);
+                            // Bitiş tarihi henüz geçmemişse hedef AKTİF
+                            if (bitisTarihi.Date >= System.DateTime.Now.Date)
+                            {
+                                int kalanGun = (int)(bitisTarihi.Date - System.DateTime.Now.Date).TotalDays;
+                                if (!string.IsNullOrEmpty(aktifProjelerMetni)) aktifProjelerMetni += " | ";
+                                aktifProjelerMetni += $"Hedef: {hedef.hedefAdi}, Kalan Gün: {kalanGun}";
+                            }
                         }
                     }
                 }
@@ -51,7 +65,7 @@ public class SiberAsistan : MonoBehaviour
     }
 
     [Header("API Ayarları")]
-    [SerializeField] private string apiKey = ""; 
+    [SerializeField] private AsistanConfig config;
 
     public void ModernArayuzdenMesajAl(string mesaj)
     {
@@ -70,10 +84,10 @@ public class SiberAsistan : MonoBehaviour
         string todayContext = "Bugünün Tarihi: " + System.DateTime.Now.ToString("dd.MM.yyyy") + "\n";
         // 1. Mevcut Görevleri Okuma
         string mevcutGorevlerString = "";
-        ScheduleManager scheduleManager = FindFirstObjectByType<ScheduleManager>();
-        if (scheduleManager != null && scheduleManager.tasks != null && scheduleManager.tasks.Count > 0)
+        if (_cachedScheduleManager == null) _cachedScheduleManager = FindFirstObjectByType<ScheduleManager>();
+        if (_cachedScheduleManager != null && _cachedScheduleManager.tasks != null && _cachedScheduleManager.tasks.Count > 0)
         {
-            foreach (var task in scheduleManager.tasks)
+            foreach (var task in _cachedScheduleManager.tasks)
             {
                 if (!string.IsNullOrEmpty(mevcutGorevlerString)) mevcutGorevlerString += ", ";
                 mevcutGorevlerString += task.taskTime + "-" + task.taskName;
@@ -104,22 +118,32 @@ public class SiberAsistan : MonoBehaviour
 
     IEnumerator AskSecretary(string prompt)
     {
-        string cleanKey = apiKey.Trim();
+        if (config == null) config = Resources.Load<AsistanConfig>("SiberAsistanConfig");
+        
+        string cleanKey = config != null ? config.apiKey.Trim() : "";
+        string cleanModelName = config != null ? config.modelName.Trim() : "gemini-1.5-pro";
+
         if (string.IsNullOrEmpty(cleanKey))
         {
             if (modernUI != null) 
             {
-                modernUI.EkranaMesajBas("Hata - API Key boş.", false);
+                modernUI.EkranaMesajBas("Hata - API Key boş. Lütfen AsistanConfig objesini ayarlayın.", false);
                 modernUI.DurumCevrimiciYap();
             }
             yield break;
         }
 
-        string escapedPrompt = prompt.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "\\r").Replace("\t", "\\t");
-        string jsonData = "{\"contents\":[{\"parts\":[{\"text\":\"" + escapedPrompt + "\"}]}]}";
+        GeminiRequest requestObj = new GeminiRequest();
+        requestObj.contents = new GeminiContent[1];
+        requestObj.contents[0] = new GeminiContent();
+        requestObj.contents[0].parts = new GeminiPart[1];
+        requestObj.contents[0].parts[0] = new GeminiPart();
+        requestObj.contents[0].parts[0].text = prompt;
+
+        string jsonData = JsonUtility.ToJson(requestObj);
 
         string temizDomain = "https://generativelanguage.googleapis.com";
-        string modelEndpoint = "/v1beta/models/gemini-3.1-flash-lite:generateContent?key=";
+        string modelEndpoint = $"/v1beta/models/{cleanModelName}:generateContent?key=";
         string apiUrl = temizDomain + modelEndpoint + cleanKey;
 
         // TEŞHİS İÇİN KONSOL YAZDIRMASI (Bunu kesinlikle ekle):
@@ -185,21 +209,21 @@ public class SiberAsistan : MonoBehaviour
                                 int sure = 0;
                                 int.TryParse(parts[4].Trim(), out sure);
                                 
-                                PageNavigator nav = FindFirstObjectByType<PageNavigator>();
-                                if (nav != null) {
-                                    nav.GorevKartiEkle(tarih, saat, gorevAdi, sure.ToString(), false);
+                                if (_cachedNavigator == null) _cachedNavigator = FindFirstObjectByType<PageNavigator>();
+                                if (_cachedNavigator != null) {
+                                    _cachedNavigator.GorevKartiEkle(tarih, saat, gorevAdi, sure.ToString(), false);
                                 }
                             }
                         } else if (trimmedLine.StartsWith("[TEMIZLE]")) {
                             // Görevleri temizle
-                            ScheduleManager sManager = FindFirstObjectByType<ScheduleManager>();
-                            if (sManager != null) {
-                                sManager.tasks.Clear();
-                                sManager.SaveTasks();
+                            if (_cachedScheduleManager == null) _cachedScheduleManager = FindFirstObjectByType<ScheduleManager>();
+                            if (_cachedScheduleManager != null) {
+                                _cachedScheduleManager.tasks.Clear();
+                                _cachedScheduleManager.SaveTasks();
                             }
                             
-                            GorevKartiYonetici gManager = FindFirstObjectByType<GorevKartiYonetici>();
-                            if (gManager != null) gManager.TumGorevleriTemizle();
+                            if (_cachedGorevKartiYonetici == null) _cachedGorevKartiYonetici = FindFirstObjectByType<GorevKartiYonetici>();
+                            if (_cachedGorevKartiYonetici != null) _cachedGorevKartiYonetici.TumGorevleriTemizle();
                             
                             cleanChatText += "Emir alındı, mevcut görev kayıtları imha edildi.\n";
                         } else if (!string.IsNullOrEmpty(trimmedLine)) {
@@ -232,18 +256,28 @@ public class SiberAsistan : MonoBehaviour
 
     IEnumerator GizliSorguCoroutine(string prompt, System.Action<string> callback)
     {
-        string cleanKey = apiKey.Trim();
+        if (config == null) config = Resources.Load<AsistanConfig>("SiberAsistanConfig");
+        
+        string cleanKey = config != null ? config.apiKey.Trim() : "";
+        string cleanModelName = config != null ? config.modelName.Trim() : "gemini-3.1-flash-lite";
+
         if (string.IsNullOrEmpty(cleanKey))
         {
-            callback?.Invoke("Hata: API Key boş.");
+            callback?.Invoke("Hata: API Key boş. Lütfen AsistanConfig objesini ayarlayın.");
             yield break;
         }
 
-        string escapedPrompt = prompt.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "\\r").Replace("\t", "\\t");
-        string jsonData = "{\"contents\":[{\"parts\":[{\"text\":\"" + escapedPrompt + "\"}]}]}";
+        GeminiRequest requestObj = new GeminiRequest();
+        requestObj.contents = new GeminiContent[1];
+        requestObj.contents[0] = new GeminiContent();
+        requestObj.contents[0].parts = new GeminiPart[1];
+        requestObj.contents[0].parts[0] = new GeminiPart();
+        requestObj.contents[0].parts[0].text = prompt;
+
+        string jsonData = JsonUtility.ToJson(requestObj);
 
         string temizDomain = "https://generativelanguage.googleapis.com";
-        string modelEndpoint = "/v1beta/models/gemini-3.1-flash-lite:generateContent?key=";
+        string modelEndpoint = $"/v1beta/models/{cleanModelName}:generateContent?key=";
         string apiUrl = temizDomain + modelEndpoint + cleanKey;
 
         using (UnityWebRequest request = new UnityWebRequest(apiUrl, "POST"))
@@ -286,22 +320,5 @@ public class SiberAsistan : MonoBehaviour
     }
 }
 
-[System.Serializable]
-public class GeminiResponse {
-    public GeminiCandidate[] candidates;
-}
-
-[System.Serializable]
-public class GeminiCandidate {
-    public GeminiContent content;
-}
-
-[System.Serializable]
-public class GeminiContent {
-    public GeminiPart[] parts;
-}
-
-[System.Serializable]
-public class GeminiPart {
-    public string text;
-}
+// GeminiResponse, GeminiCandidate, GeminiContent, GeminiPart
+// artık Models/VeriModelleri.cs dosyasında tanımlıdır.

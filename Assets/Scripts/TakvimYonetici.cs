@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
+using System.IO;
 
 /// <summary>
 /// Takvim render, ay navigasyonu, tarih aralığı seçimi ve hedef marker yönetimi.
@@ -61,9 +62,28 @@ public class TakvimYonetici : MonoBehaviour
     public void HedefleriYukle()
     {
         aktifHedefler.Clear();
+        string path = Path.Combine(Application.persistentDataPath, "goals.json");
+        string json = "";
+
+        // Migration
         if (PlayerPrefs.HasKey("AktifHedefler"))
         {
-            string json = PlayerPrefs.GetString("AktifHedefler");
+            json = PlayerPrefs.GetString("AktifHedefler");
+            try
+            {
+                File.WriteAllText(path, json);
+                PlayerPrefs.DeleteKey("AktifHedefler");
+                PlayerPrefs.Save();
+            }
+            catch { }
+        }
+        else if (File.Exists(path))
+        {
+            try { json = File.ReadAllText(path); } catch { }
+        }
+
+        if (!string.IsNullOrEmpty(json))
+        {
             HedefListesiWrapper wrapper = JsonUtility.FromJson<HedefListesiWrapper>(json);
             if (wrapper != null && wrapper.hedefler != null)
             {
@@ -98,9 +118,19 @@ public class TakvimYonetici : MonoBehaviour
             lblAd.style.color = new StyleColor(Color.white);
             lblAd.style.unityFontStyleAndWeight = FontStyle.Bold;
 
-            Label lblKalan = new Label("Kalan Gün: " + hedef.kalanGun);
-            lblKalan.style.color = new StyleColor(new Color(0.6f, 0.6f, 0.6f));
+            // Dinamik kalan gün hesaplama
+            int dinamikKalanGun = hedef.kalanGun; // Varsayılan
+            System.DateTime hBaslangic;
+            if (System.DateTime.TryParseExact(hedef.baslangicTarihi, "dd.MM.yyyy", null, System.Globalization.DateTimeStyles.None, out hBaslangic))
+            {
+                System.DateTime hBitis = hBaslangic.AddDays(hedef.kalanGun);
+                dinamikKalanGun = (int)(hBitis.Date - System.DateTime.Now.Date).TotalDays;
+            }
+
+            string kalanText = dinamikKalanGun >= 0 ? $"Kalan: {dinamikKalanGun} gün" : "Süre doldu!";
+            Label lblKalan = new Label(kalanText);
             lblKalan.style.fontSize = 12;
+            lblKalan.style.color = new StyleColor(dinamikKalanGun >= 0 ? new Color(0.6f, 0.6f, 0.6f) : new Color(0.93f, 0.26f, 0.26f));
 
             solTaraf.Add(lblAd);
             solTaraf.Add(lblKalan);
@@ -126,12 +156,20 @@ public class TakvimYonetici : MonoBehaviour
         }
     }
 
-    private void HedefleriKaydet()
+    public void HedefleriKaydet()
     {
         HedefListesiWrapper wrapper = new HedefListesiWrapper();
         wrapper.hedefler = aktifHedefler;
-        PlayerPrefs.SetString("AktifHedefler", JsonUtility.ToJson(wrapper));
-        PlayerPrefs.Save();
+        string json = JsonUtility.ToJson(wrapper, true);
+        string path = Path.Combine(Application.persistentDataPath, "goals.json");
+        try
+        {
+            File.WriteAllText(path, json);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError("[TakvimYonetici] Hedefler kaydedilemedi: " + e.Message);
+        }
     }
 
     /// <summary>

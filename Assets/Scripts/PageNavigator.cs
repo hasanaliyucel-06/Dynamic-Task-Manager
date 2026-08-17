@@ -40,6 +40,16 @@ public class PageNavigator : MonoBehaviour
 
         var root = uiDocument.rootVisualElement;
 
+        // Safe Area Desteği (Çentik/Notch Padding)
+        var mainContainer = root.Q<VisualElement>(className: "main-container");
+        if (mainContainer != null)
+        {
+            float topPadding = Screen.height - Screen.safeArea.yMax;
+            float bottomPadding = Screen.safeArea.yMin;
+            if (topPadding > 0) mainContainer.style.paddingTop = topPadding;
+            if (bottomPadding > 0) mainContainer.style.paddingBottom = bottomPadding;
+        }
+
         // Sayfa referansları
         pageSohbet = root.Q<VisualElement>("Page_Sohbet");
         pageGorevler = root.Q<VisualElement>("Page_Gorevler");
@@ -84,6 +94,60 @@ public class PageNavigator : MonoBehaviour
 
         // Swipe gesture'ları kur
         SwipeKur(root);
+
+        // Faz 2: Onboarding ve Günlük Özet Kontrolleri
+        KontrolOnboarding(root);
+        KontrolGunlukOzet(root);
+    }
+
+    private void KontrolOnboarding(VisualElement root)
+    {
+        if (PlayerPrefs.GetInt("OnboardingDone", 0) == 0)
+        {
+            var overlay = root.Q<VisualElement>("onboardingOverlay");
+            if (overlay != null) overlay.style.display = DisplayStyle.Flex;
+
+            var btnIleri = root.Q<Button>("btnOnboardingIleri");
+            if (btnIleri != null)
+            {
+                btnIleri.clicked += () => {
+                    if (overlay != null) overlay.style.display = DisplayStyle.None;
+                    PlayerPrefs.SetInt("OnboardingDone", 1);
+                    PlayerPrefs.Save();
+                };
+            }
+        }
+    }
+
+    private void KontrolGunlukOzet(VisualElement root)
+    {
+        string bugun = System.DateTime.Now.ToString("dd.MM.yyyy");
+        if (System.DateTime.Now.Hour >= 20 && PlayerPrefs.GetString("SonOzetTarihi", "") != bugun)
+        {
+            var overlay = root.Q<VisualElement>("gunlukOzetOverlay");
+            if (overlay != null)
+            {
+                overlay.style.display = DisplayStyle.Flex;
+                PlayerPrefs.SetString("SonOzetTarihi", bugun);
+                PlayerPrefs.Save();
+                
+                // Tamamlanan görev sayısını yazdır
+                var scheduleManager = FindFirstObjectByType<ScheduleManager>();
+                var lblAdet = root.Q<Label>("lblOzetAdet");
+                if (scheduleManager != null && lblAdet != null)
+                {
+                    lblAdet.text = scheduleManager.BugununTamamlananSayisi().ToString();
+                }
+
+                var btnKapat = root.Q<Button>("btnOzetKapat");
+                if (btnKapat != null)
+                {
+                    btnKapat.clicked += () => {
+                        if (overlay != null) overlay.style.display = DisplayStyle.None;
+                    };
+                }
+            }
+        }
     }
 
     void OnDisable()
@@ -165,23 +229,33 @@ public class PageNavigator : MonoBehaviour
         Color aktifRenk = new Color(0f, 0.5f, 1f);
         Color pasifRenk = new Color(0.6f, 0.6f, 0.6f);
 
+        // Önce hepsinden animasyon classını çıkar
+        if (btnSohbet != null) btnSohbet.RemoveFromClassList("tab-button-active");
+        if (btnGorevler != null) btnGorevler.RemoveFromClassList("tab-button-active");
+        if (btnDisiplin != null) btnDisiplin.RemoveFromClassList("tab-button-active");
+        if (btnSistem != null) btnSistem.RemoveFromClassList("tab-button-active");
+
         if (btnSohbet != null)
         {
+            if (sayfaIndex == 0) btnSohbet.AddToClassList("tab-button-active");
             btnSohbet.style.unityBackgroundImageTintColor = new StyleColor((sayfaIndex == 0) ? aktifRenk : pasifRenk);
             btnSohbet.style.backgroundColor = new StyleColor(Color.clear);
         }
         if (btnGorevler != null)
         {
+            if (sayfaIndex == 1) btnGorevler.AddToClassList("tab-button-active");
             btnGorevler.style.unityBackgroundImageTintColor = new StyleColor((sayfaIndex == 1) ? aktifRenk : pasifRenk);
             btnGorevler.style.backgroundColor = new StyleColor(Color.clear);
         }
         if (btnDisiplin != null)
         {
+            if (sayfaIndex == 2) btnDisiplin.AddToClassList("tab-button-active");
             btnDisiplin.style.unityBackgroundImageTintColor = new StyleColor((sayfaIndex == 2) ? aktifRenk : pasifRenk);
             btnDisiplin.style.backgroundColor = new StyleColor(Color.clear);
         }
         if (btnSistem != null)
         {
+            if (sayfaIndex == 3) btnSistem.AddToClassList("tab-button-active");
             btnSistem.style.unityBackgroundImageTintColor = new StyleColor((sayfaIndex == 3) ? aktifRenk : pasifRenk);
             btnSistem.style.backgroundColor = new StyleColor(Color.clear);
         }
@@ -196,11 +270,11 @@ public class PageNavigator : MonoBehaviour
     /// <summary>
     /// Proxy: Görev kartı ekleme isteğini GorevKartiYonetici'ye yönlendirir.
     /// </summary>
-    public void GorevKartiEkle(string tarih, string saat, string gorevAdi, string sure = "", bool katiMi = false, bool kaydet = true, bool isRepeating = false, bool isAlreadyCompleted = false, string kategori = "Genel")
+    public void GorevKartiEkle(string tarih, string saat, string gorevAdi, string sure = "", bool katiMi = false, bool kaydet = true, bool isRepeating = false, bool isAlreadyCompleted = false, string kategori = "Genel", int oncelik = 1, string notlar = "")
     {
         if (gorevKartiYonetici != null)
         {
-            gorevKartiYonetici.GorevKartiEkle(tarih, saat, gorevAdi, sure, katiMi, kaydet, isRepeating, isAlreadyCompleted, kategori);
+            gorevKartiYonetici.GorevKartiEkle(tarih, saat, gorevAdi, sure, katiMi, kaydet, isRepeating, isAlreadyCompleted, kategori, oncelik, notlar);
         }
     }
 
@@ -216,20 +290,4 @@ public class PageNavigator : MonoBehaviour
     }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Paylaşılan Veri Modelleri
-// SiberAsistan.cs, TakvimYonetici.cs ve SihirbazYonetici.cs
-// tarafından kullanılır.
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-[System.Serializable]
-public class UzunVadeliHedef {
-    public string hedefAdi;
-    public int kalanGun;
-    public string baslangicTarihi;
-}
-
-[System.Serializable]
-public class HedefListesiWrapper {
-    public System.Collections.Generic.List<UzunVadeliHedef> hedefler;
-}
+// UzunVadeliHedef ve HedefListesiWrapper artık Models/VeriModelleri.cs dosyasında tanımlıdır.

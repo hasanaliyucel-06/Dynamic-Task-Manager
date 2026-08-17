@@ -1734,7 +1734,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SiberAsistan
   modernUI: {fileID: 256842404}
   locManager: {fileID: 732362524}
-  apiKey: 
 --- !u!4 &456295833
 Transform:
   m_ObjectHideFlags: 0

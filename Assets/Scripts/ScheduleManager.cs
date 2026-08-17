@@ -1,52 +1,18 @@
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Events;
 
-
-// Bu sınıfı Unity Inspector'da görebilmek için Serializable olarak ekliyoruz
-// NOT: C#'ın System.Threading.Tasks.Task ile çakışmasını önlemek için "GorevData" kullanılıyor.
-[System.Serializable]
-public class GorevData
-{
-    public string taskDate;
-    public string taskTime;
-    public string taskName;
-    public int durationMinutes;
-    public bool isStrictBlock;
-    public bool isCompleted;
-    public bool isRepeating;
-    
-    // Faz 3 Yeni Özellikleri
-    public string kategori;
-    public int hatirlaticiDakikaOnce;
-
-    // Basit bir constructor (isteğe bağlı)
-    public GorevData(string date, string time, string name, int duration, bool strictBlock, bool completed = false, bool repeating = false, string kat = "Genel", int hatirlatici = 15)
-    {
-        taskDate = date;
-        taskTime = time;
-        taskName = name;
-        durationMinutes = duration;
-        isStrictBlock = strictBlock;
-        isCompleted = completed;
-        isRepeating = repeating;
-        kategori = kat;
-        hatirlaticiDakikaOnce = hatirlatici;
-    }
-}
-
-// JsonUtility listeleri doğrudan desteklemediği için yardımcı sınıf kullanıyoruz.
-[System.Serializable]
-public class TaskWrapper
-{
-    public List<GorevData> tasks;
-}
+// GorevData ve TaskWrapper artık Models/VeriModelleri.cs dosyasında tanımlıdır.
 
 public class ScheduleManager : MonoBehaviour
 {
     // GorevData objelerinin tutulduğu liste
     public List<GorevData> tasks = new List<GorevData>();
+
+    // Cache'lenmiş referans
+    private PageNavigator _cachedNavigator;
     
     // Toplam yaşanan gecikmeyi tutar
     public int TotalDelay = 0;
@@ -189,7 +155,7 @@ public class ScheduleManager : MonoBehaviour
         }
     }
 
-    public void UpdateTask(string oldName, string newName, string newTime, int newDuration, string yeniKategori = "Genel")
+    public void UpdateTask(string oldName, string newName, string newTime, int newDuration, string yeniKategori = "Genel", int yeniOncelik = 1, string yeniNotlar = "")
     {
         GorevData taskToUpdate = tasks.Find(t => t.taskName == oldName);
         if (taskToUpdate != null)
@@ -198,6 +164,8 @@ public class ScheduleManager : MonoBehaviour
             taskToUpdate.taskTime = newTime;
             taskToUpdate.durationMinutes = newDuration;
             taskToUpdate.kategori = yeniKategori;
+            taskToUpdate.oncelik = yeniOncelik;
+            taskToUpdate.notlar = yeniNotlar;
             SaveTasks();
             onScheduleUpdated?.Invoke();
         }
@@ -206,7 +174,7 @@ public class ScheduleManager : MonoBehaviour
     /// <summary>
     /// Yeni görev ekler. Aynı tarih+saat+isimde görev zaten varsa çift kayıt oluşturmaz.
     /// </summary>
-    public void AddTask(string tarih, string time, string taskName, int duration, bool isStrict = false, bool isRepeating = false, string kategori = "Genel", int hatirlatici = 15)
+    public void AddTask(string tarih, string time, string taskName, int duration, bool isStrict = false, bool isRepeating = false, string kategori = "Genel", int hatirlatici = 15, int oncelik = 1, string notlar = "")
     {
         // Çift kayıt kontrolü: Aynı tarih, saat ve isimdeki görev zaten varsa ekleme
         bool zatenVar = tasks.Exists(t => t.taskDate == tarih && t.taskTime == time && t.taskName == taskName);
@@ -216,7 +184,7 @@ public class ScheduleManager : MonoBehaviour
             return;
         }
 
-        GorevData newTask = new GorevData(tarih, time, taskName, duration, isStrict, false, isRepeating, kategori, hatirlatici);
+        GorevData newTask = new GorevData(tarih, time, taskName, duration, isStrict, false, isRepeating, kategori, hatirlatici, oncelik, notlar);
         tasks.Add(newTask);
 
         onScheduleUpdated?.Invoke();
@@ -229,17 +197,54 @@ public class ScheduleManager : MonoBehaviour
     {
         TaskWrapper wrapper = new TaskWrapper();
         wrapper.tasks = this.tasks;
-        string json = JsonUtility.ToJson(wrapper);
-        PlayerPrefs.SetString("SavedTasks", json);
-        PlayerPrefs.Save();
-        // Debug.Log("[ScheduleManager] Görevler kaydedildi.");
+        string json = JsonUtility.ToJson(wrapper, true);
+        
+        string path = Path.Combine(Application.persistentDataPath, "tasks.json");
+        try
+        {
+            File.WriteAllText(path, json);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError("[ScheduleManager] Görevler kaydedilemedi: " + e.Message);
+        }
     }
 
     public void LoadTasks()
     {
+        string path = Path.Combine(Application.persistentDataPath, "tasks.json");
+        string json = "";
+
+        // Migration (PlayerPrefs -> JSON)
         if (PlayerPrefs.HasKey("SavedTasks"))
         {
-            string json = PlayerPrefs.GetString("SavedTasks");
+            json = PlayerPrefs.GetString("SavedTasks");
+            try
+            {
+                File.WriteAllText(path, json);
+                PlayerPrefs.DeleteKey("SavedTasks");
+                PlayerPrefs.Save();
+                Debug.Log("[ScheduleManager] Eski PlayerPrefs verisi JSON dosyasına taşındı.");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError("[ScheduleManager] Migration hatası: " + e.Message);
+            }
+        }
+        else if (File.Exists(path))
+        {
+            try
+            {
+                json = File.ReadAllText(path);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError("[ScheduleManager] Görevler okunamadı: " + e.Message);
+            }
+        }
+
+        if (!string.IsNullOrEmpty(json))
+        {
             TaskWrapper wrapper = JsonUtility.FromJson<TaskWrapper>(json);
             
             // Veri varsa listeye ata
@@ -261,7 +266,7 @@ public class ScheduleManager : MonoBehaviour
                         bool bugunVarMi = this.tasks.Exists(x => x.taskDate == bugunTarih && x.taskName == t.taskName);
                         if (!bugunVarMi)
                         {
-                            eklenecekler.Add(new GorevData(bugunTarih, t.taskTime, t.taskName, t.durationMinutes, t.isStrictBlock, false, true, t.kategori, t.hatirlaticiDakikaOnce));
+                            eklenecekler.Add(new GorevData(bugunTarih, t.taskTime, t.taskName, t.durationMinutes, t.isStrictBlock, false, true, t.kategori, t.hatirlaticiDakikaOnce, t.oncelik, t.notlar));
                             degisiklikVar = true;
                         }
                     }
@@ -296,12 +301,12 @@ public class ScheduleManager : MonoBehaviour
                 Debug.Log("[ScheduleManager] Görevler başarıyla yüklendi.");
                 
                 // SADECE bugünün görevlerini UI'a ekle (Tarih filtresi)
-                PageNavigator navigator = FindFirstObjectByType<PageNavigator>();
-                if (navigator != null) {
+                if (_cachedNavigator == null) _cachedNavigator = FindFirstObjectByType<PageNavigator>();
+                if (_cachedNavigator != null) {
                     foreach (var gorev in this.tasks) {
                         if (gorev.taskDate == bugunTarih)
                         {
-                            navigator.GorevKartiEkle(gorev.taskDate, gorev.taskTime, gorev.taskName, gorev.durationMinutes.ToString(), gorev.isStrictBlock, false, gorev.isRepeating, gorev.isCompleted, gorev.kategori);
+                            _cachedNavigator.GorevKartiEkle(gorev.taskDate, gorev.taskTime, gorev.taskName, gorev.durationMinutes.ToString(), gorev.isStrictBlock, false, gorev.isRepeating, gorev.isCompleted, gorev.kategori, gorev.oncelik, gorev.notlar);
                         }
                     }
                 }

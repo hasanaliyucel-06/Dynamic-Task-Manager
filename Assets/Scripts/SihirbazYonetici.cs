@@ -12,9 +12,11 @@ public class SihirbazYonetici : MonoBehaviour
     private int sihirbazAdimi = 0;
     private string geciciGorevAdi = "";
     private int geciciSure = 0;
+    private int secilenOncelik = 1;
 
     private GorevKartiYonetici gorevKartiYonetici;
     private TakvimYonetici takvimYonetici;
+    private SiberAsistan _cachedAsistan;
 
     /// <summary>
     /// UI Toolkit root elementini ve diğer yönetici referanslarını alır.
@@ -25,6 +27,7 @@ public class SihirbazYonetici : MonoBehaviour
     {
         gorevKartiYonetici = gky;
         takvimYonetici = ty;
+        _cachedAsistan = FindFirstObjectByType<SiberAsistan>();
 
         // Görev Sihirbazı UI elementleri
         TextField inputGorev = root.Q<TextField>("Input_YeniGorev");
@@ -39,9 +42,26 @@ public class SihirbazYonetici : MonoBehaviour
         Button btnSihirbazIptal = root.Q<Button>("btnSihirbazIptal");
         Toggle toggleTekrarla = root.Q<Toggle>("toggleTekrarla");
         TextField inputKategori = root.Q<TextField>("inputKategori");
+        TextField inputNotlar = root.Q<TextField>("inputNotlar");
+        
+        Button btnSihirbazOncelikDusuk = root.Q<Button>("btnSihirbazOncelikDusuk");
+        Button btnSihirbazOncelikOrta = root.Q<Button>("btnSihirbazOncelikOrta");
+        Button btnSihirbazOncelikYuksek = root.Q<Button>("btnSihirbazOncelikYuksek");
+
+        void OncelikSec(int oncelik)
+        {
+            secilenOncelik = oncelik;
+            if (btnSihirbazOncelikDusuk != null) btnSihirbazOncelikDusuk.style.opacity = oncelik == 0 ? 1f : 0.4f;
+            if (btnSihirbazOncelikOrta != null) btnSihirbazOncelikOrta.style.opacity = oncelik == 1 ? 1f : 0.4f;
+            if (btnSihirbazOncelikYuksek != null) btnSihirbazOncelikYuksek.style.opacity = oncelik == 2 ? 1f : 0.4f;
+        }
+
+        if (btnSihirbazOncelikDusuk != null) btnSihirbazOncelikDusuk.clicked += () => OncelikSec(0);
+        if (btnSihirbazOncelikOrta != null) btnSihirbazOncelikOrta.clicked += () => OncelikSec(1);
+        if (btnSihirbazOncelikYuksek != null) btnSihirbazOncelikYuksek.clicked += () => OncelikSec(2);
 
         // Input stilleri
-        TextField[] allInputs = { inputSihirbazDeger, inputSaat, inputDakika, inputKategori };
+        TextField[] allInputs = { inputSihirbazDeger, inputSaat, inputDakika, inputKategori, inputNotlar };
         foreach (var inp in allInputs)
         {
             if (inp != null)
@@ -127,6 +147,8 @@ public class SihirbazYonetici : MonoBehaviour
                 }
                 if (timeInputContainer != null) timeInputContainer.style.display = DisplayStyle.None;
                 if (btnSihirbazOnay != null) btnSihirbazOnay.text = "İLERİ";
+                OncelikSec(1);
+                if (inputNotlar != null) inputNotlar.value = "";
                 if (gorevSihirbaziOverlay != null) gorevSihirbaziOverlay.style.display = DisplayStyle.Flex;
 
                 inputGorev.value = ""; // Kutuyu temizle
@@ -147,6 +169,7 @@ public class SihirbazYonetici : MonoBehaviour
                 if (inputSaat != null) inputSaat.value = "";
                 if (inputDakika != null) inputDakika.value = "";
                 if (inputKategori != null) inputKategori.value = "Genel";
+                if (inputNotlar != null) inputNotlar.value = "";
                 sihirbazAdimi = 0;
             };
         }
@@ -182,10 +205,11 @@ public class SihirbazYonetici : MonoBehaviour
                     if (toggleTekrarla != null) isRepeating = toggleTekrarla.value;
 
                     string kategori = (inputKategori != null && !string.IsNullOrEmpty(inputKategori.value)) ? inputKategori.value : "Genel";
+                    string notlar = inputNotlar != null ? inputNotlar.value : "";
 
                     if (gorevKartiYonetici != null)
                     {
-                        gorevKartiYonetici.GorevKartiEkle(bugununTarihi, zamanMetni, geciciGorevAdi, geciciSure.ToString(), false, true, isRepeating, false, kategori);
+                        gorevKartiYonetici.GorevKartiEkle(bugununTarihi, zamanMetni, geciciGorevAdi, geciciSure.ToString(), false, true, isRepeating, false, kategori, secilenOncelik, notlar);
                     }
 
                     // Sihirbazı sıfırla ve kapat
@@ -196,6 +220,7 @@ public class SihirbazYonetici : MonoBehaviour
                     if (inputSaat != null) inputSaat.value = "";
                     if (inputDakika != null) inputDakika.value = "";
                     if (inputKategori != null) inputKategori.value = "Genel";
+                    if (inputNotlar != null) inputNotlar.value = "";
                     if (toggleTekrarla != null) toggleTekrarla.value = false;
                     sihirbazAdimi = 0;
                 }
@@ -240,10 +265,10 @@ public class SihirbazYonetici : MonoBehaviour
 
                 string gizliPrompt = $"Kullanıcının '{hedefAdi}' hedefine ulaşması için {kalanGun} günü var. BUGÜN yapması gereken tek bir spesifik görev üret. Yanıtın KESİNLİKLE sadece şu formatta olmalı: [HEDEF:SAAT:Görev Adı:SÜRE]. SAAT kısmı HH:MM formatında (örn: 09:00) olmalıdır. SÜRE kısmı SADECE ve SADECE rakamlardan (örn: 30) oluşmalıdır. Hiçbir metin ekleme!";
 
-                SiberAsistan asistan = FindFirstObjectByType<SiberAsistan>();
-                if (asistan != null)
+                if (_cachedAsistan == null) _cachedAsistan = FindFirstObjectByType<SiberAsistan>();
+                if (_cachedAsistan != null)
                 {
-                    asistan.GizliSorguYap(gizliPrompt, (cevap) => {
+                    _cachedAsistan.GizliSorguYap(gizliPrompt, (cevap) => {
                         string temizCevap = cevap.Trim();
                         temizCevap = temizCevap.Replace("[HEDEF:", "").Replace("]", "");
 
@@ -275,8 +300,7 @@ public class SihirbazYonetici : MonoBehaviour
 
                             HedefListesiWrapper wrapper = new HedefListesiWrapper();
                             wrapper.hedefler = takvimYonetici.aktifHedefler;
-                            PlayerPrefs.SetString("AktifHedefler", JsonUtility.ToJson(wrapper));
-                            PlayerPrefs.Save();
+                            takvimYonetici.HedefleriKaydet();
                         }
                         else
                         {

@@ -20,9 +20,17 @@ public class GorevKartiYonetici : MonoBehaviour
     // Düzenleme durumu
     private string duzenlenenGorevEskiAd = "";
     private string duzenlenenGorevEskiTarih = "";
+    private int duzenlenenOncelik = 1;
     private VisualElement gorevDuzenleOverlay;
-    private TextField editGorevAdi, editGorevSure, editSaat, editDakika, editKategori;
+    private TextField editGorevAdi, editGorevSure, editSaat, editDakika, editKategori, editNotlar;
     private Button btnDuzenleIptal, btnDuzenleKaydet;
+    private Button btnDuzenleOncelikDusuk, btnDuzenleOncelikOrta, btnDuzenleOncelikYuksek;
+
+    // Geçmiş Görevler
+    private VisualElement gecmisGorevlerOverlay;
+    private ScrollView scrollGecmisGorevler;
+    private Button btnGecmisKapat;
+    private Button btnGecmisGorevler;
 
     // Silme onay overlay
     private VisualElement silmeOnayOverlay;
@@ -58,8 +66,26 @@ public class GorevKartiYonetici : MonoBehaviour
         editSaat = root.Q<TextField>("editSaat");
         editDakika = root.Q<TextField>("editDakika");
         editKategori = root.Q<TextField>("editKategori");
+        editNotlar = root.Q<TextField>("editNotlar");
         btnDuzenleIptal = root.Q<Button>("btnDuzenleIptal");
         btnDuzenleKaydet = root.Q<Button>("btnDuzenleKaydet");
+        
+        btnDuzenleOncelikDusuk = root.Q<Button>("btnDuzenleOncelikDusuk");
+        btnDuzenleOncelikOrta = root.Q<Button>("btnDuzenleOncelikOrta");
+        btnDuzenleOncelikYuksek = root.Q<Button>("btnDuzenleOncelikYuksek");
+
+        if (btnDuzenleOncelikDusuk != null) btnDuzenleOncelikDusuk.clicked += () => OncelikSec(0, true);
+        if (btnDuzenleOncelikOrta != null) btnDuzenleOncelikOrta.clicked += () => OncelikSec(1, true);
+        if (btnDuzenleOncelikYuksek != null) btnDuzenleOncelikYuksek.clicked += () => OncelikSec(2, true);
+
+        // Geçmiş Görevler
+        gecmisGorevlerOverlay = root.Q<VisualElement>("gecmisGorevlerOverlay");
+        scrollGecmisGorevler = root.Q<ScrollView>("scrollGecmisGorevler");
+        btnGecmisKapat = root.Q<Button>("btnGecmisKapat");
+        btnGecmisGorevler = root.Q<Button>("Btn_GecmisGorevler");
+
+        if (btnGecmisGorevler != null) btnGecmisGorevler.clicked += GecmisGorevleriGoster;
+        if (btnGecmisKapat != null) btnGecmisKapat.clicked += () => { if (gecmisGorevlerOverlay != null) gecmisGorevlerOverlay.style.display = DisplayStyle.None; };
 
         // Silme onay overlay referansları
         silmeOnayOverlay = root.Q<VisualElement>("silmeOnayOverlay");
@@ -74,35 +100,30 @@ public class GorevKartiYonetici : MonoBehaviour
 
         if (btnDuzenleIptal != null)
         {
-            btnDuzenleIptal.clicked += () => { if (gorevDuzenleOverlay != null) gorevDuzenleOverlay.style.display = DisplayStyle.None; };
+            btnDuzenleIptal.clicked -= DuzenleIptalClicked;
+            btnDuzenleIptal.clicked += DuzenleIptalClicked;
         }
         if (btnDuzenleKaydet != null)
         {
+            btnDuzenleKaydet.clicked -= KaydetGorevDuzenle;
             btnDuzenleKaydet.clicked += KaydetGorevDuzenle;
         }
 
-        // Silme onay butonları
         if (btnSilmeOnayEvet != null)
         {
-            btnSilmeOnayEvet.clicked += () => {
-                onSilmeOnaylandi?.Invoke();
-                if (silmeOnayOverlay != null) silmeOnayOverlay.style.display = DisplayStyle.None;
-            };
+            btnSilmeOnayEvet.clicked -= SilmeOnayEvetClicked;
+            btnSilmeOnayEvet.clicked += SilmeOnayEvetClicked;
         }
         if (btnSilmeOnayHayir != null)
         {
-            btnSilmeOnayHayir.clicked += () => {
-                if (silmeOnayOverlay != null) silmeOnayOverlay.style.display = DisplayStyle.None;
-            };
+            btnSilmeOnayHayir.clicked -= SilmeOnayHayirClicked;
+            btnSilmeOnayHayir.clicked += SilmeOnayHayirClicked;
         }
 
-        // Undo butonu
         if (btnUndo != null)
         {
-            btnUndo.clicked += () => {
-                onUndoAction?.Invoke();
-                UndoToastGizle();
-            };
+            btnUndo.clicked -= UndoClicked;
+            btnUndo.clicked += UndoClicked;
         }
 
         GuncelleProgressBar();
@@ -114,6 +135,12 @@ public class GorevKartiYonetici : MonoBehaviour
             _cachedScheduleManager = FindFirstObjectByType<ScheduleManager>();
         return _cachedScheduleManager;
     }
+
+    // Named event handler metotları (event sızıntısını önler)
+    private void DuzenleIptalClicked() { if (gorevDuzenleOverlay != null) gorevDuzenleOverlay.style.display = DisplayStyle.None; }
+    private void SilmeOnayEvetClicked() { onSilmeOnaylandi?.Invoke(); if (silmeOnayOverlay != null) silmeOnayOverlay.style.display = DisplayStyle.None; }
+    private void SilmeOnayHayirClicked() { if (silmeOnayOverlay != null) silmeOnayOverlay.style.display = DisplayStyle.None; }
+    private void UndoClicked() { onUndoAction?.Invoke(); UndoToastGizle(); }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // ANİMASYON SİSTEMİ
@@ -304,14 +331,19 @@ public class GorevKartiYonetici : MonoBehaviour
     /// <summary>
     /// Görev listesine yeni bir kart ekler. Kronolojik sıraya yerleştirir.
     /// </summary>
-    public void GorevKartiEkle(string tarih, string saat, string gorevAdi, string sure = "", bool katiMi = false, bool kaydet = true, bool isRepeating = false, bool isAlreadyCompleted = false, string kategori = "Genel")
+    public void GorevKartiEkle(string tarih, string saat, string gorevAdi, string sure = "", bool katiMi = false, bool kaydet = true, bool isRepeating = false, bool isAlreadyCompleted = false, string kategori = "Genel", int oncelik = 1, string notlar = "")
     {
         if (gorevListesi == null) return;
 
         VisualElement kart = new VisualElement();
         kart.AddToClassList("task-card");
 
-        // Katı görevse sol çizgiyi kırmızı yap
+        // Öncelik sınıfı ekleme
+        if (oncelik == 0) kart.AddToClassList("oncelik-dusuk");
+        else if (oncelik == 1) kart.AddToClassList("oncelik-orta");
+        else if (oncelik == 2) kart.AddToClassList("oncelik-yuksek");
+
+        // Katı görevse sol çizgiyi kırmızı yap (önceliği ezer)
         if (katiMi)
         {
             kart.style.borderLeftColor = new StyleColor(Color.red);
@@ -332,17 +364,14 @@ public class GorevKartiYonetici : MonoBehaviour
         if (!isAlreadyCompleted)
         {
             solPanel.RegisterCallback<ClickEvent>(evt => {
-                AcGorevDuzenle(tarih, saat, gorevAdi, sure, katiMi, isRepeating, kategori);
+                AcGorevDuzenle(tarih, saat, gorevAdi, sure, katiMi, isRepeating, kategori, oncelik, notlar);
             });
         }
 
         // Görev Saati
         Label lblGorevSaati = new Label(saat);
         lblGorevSaati.name = "lblGorevSaati";
-        lblGorevSaati.style.color = new StyleColor(new Color(0f, 1f, 1f));
-        lblGorevSaati.style.fontSize = 14;
-        lblGorevSaati.style.unityFontStyleAndWeight = FontStyle.Bold;
-        lblGorevSaati.style.marginBottom = 2;
+        lblGorevSaati.AddToClassList("task-saat");
         solPanel.Add(lblGorevSaati);
 
         Label gorevYazisi = new Label(gorevAdi);
@@ -390,6 +419,17 @@ public class GorevKartiYonetici : MonoBehaviour
             sureYazisi.style.fontSize = 12;
             sureYazisi.style.marginTop = 2;
             solPanel.Add(sureYazisi);
+        }
+
+        // Görev Notları
+        if (!string.IsNullOrEmpty(notlar))
+        {
+            Label lblNotlar = new Label(notlar);
+            lblNotlar.style.color = new StyleColor(new Color(0.6f, 0.6f, 0.6f));
+            lblNotlar.style.fontSize = 11;
+            lblNotlar.style.marginTop = 4;
+            lblNotlar.style.whiteSpace = WhiteSpace.Normal;
+            solPanel.Add(lblNotlar);
         }
 
         // Tekrarlayan görev etiketi
@@ -674,7 +714,7 @@ public class GorevKartiYonetici : MonoBehaviour
             {
                 if (t.taskDate == bugununTarihi)
                 {
-                    GorevKartiEkle(t.taskDate, t.taskTime, t.taskName, t.durationMinutes.ToString(), t.isStrictBlock, false, t.isRepeating, t.isCompleted);
+                    GorevKartiEkle(t.taskDate, t.taskTime, t.taskName, t.durationMinutes.ToString(), t.isStrictBlock, false, t.isRepeating, t.isCompleted, t.kategori, t.oncelik, t.notlar);
                 }
             }
         }
@@ -687,20 +727,35 @@ public class GorevKartiYonetici : MonoBehaviour
     // DÜZENLEME
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    private void AcGorevDuzenle(string tarih, string eskiSaat, string eskiAd, string eskiSure, bool katiMi, bool isRepeating, string kategori)
+    private void OncelikSec(int secilen, bool isDuzenle)
+    {
+        if (isDuzenle)
+        {
+            duzenlenenOncelik = secilen;
+            if (btnDuzenleOncelikDusuk != null) btnDuzenleOncelikDusuk.style.opacity = secilen == 0 ? 1f : 0.4f;
+            if (btnDuzenleOncelikOrta != null) btnDuzenleOncelikOrta.style.opacity = secilen == 1 ? 1f : 0.4f;
+            if (btnDuzenleOncelikYuksek != null) btnDuzenleOncelikYuksek.style.opacity = secilen == 2 ? 1f : 0.4f;
+        }
+    }
+
+    private void AcGorevDuzenle(string tarih, string eskiSaat, string eskiAd, string eskiSure, bool katiMi, bool isRepeating, string kategori, int oncelik, string notlar)
     {
         if (gorevDuzenleOverlay == null) return;
 
         duzenlenenGorevEskiAd = eskiAd;
         duzenlenenGorevEskiTarih = tarih;
+        duzenlenenOncelik = oncelik;
 
         if (editGorevAdi != null) editGorevAdi.value = eskiAd;
         if (editGorevSure != null) editGorevSure.value = eskiSure;
         if (editKategori != null) editKategori.value = kategori;
+        if (editNotlar != null) editNotlar.value = notlar;
         
         string[] saatParca = eskiSaat.Split(':');
         if (editSaat != null) editSaat.value = saatParca.Length > 0 ? saatParca[0] : "";
         if (editDakika != null) editDakika.value = saatParca.Length > 1 ? saatParca[1] : "";
+
+        OncelikSec(oncelik, true);
 
         gorevDuzenleOverlay.style.display = DisplayStyle.Flex;
     }
@@ -712,6 +767,7 @@ public class GorevKartiYonetici : MonoBehaviour
         string yeniAd = editGorevAdi != null ? editGorevAdi.value : "";
         string yeniSure = editGorevSure != null ? editGorevSure.value : "0";
         string yeniKategori = editKategori != null ? editKategori.value : "Genel";
+        string yeniNotlar = editNotlar != null ? editNotlar.value : "";
         int sureInt = 0;
         int.TryParse(yeniSure, out sureInt);
 
@@ -724,12 +780,62 @@ public class GorevKartiYonetici : MonoBehaviour
         ScheduleManager sManager = GetScheduleManager();
         if (sManager != null)
         {
-            sManager.UpdateTask(duzenlenenGorevEskiAd, yeniAd, yeniZaman, sureInt, yeniKategori);
+            sManager.UpdateTask(duzenlenenGorevEskiAd, yeniAd, yeniZaman, sureInt, yeniKategori, duzenlenenOncelik, yeniNotlar);
         }
 
         if (gorevDuzenleOverlay != null) gorevDuzenleOverlay.style.display = DisplayStyle.None;
         
         if (SesYonetici.Instance != null) SesYonetici.Instance.PlayClick();
         ListeyiYenidenCiz();
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // GEÇMİŞ GÖREVLER
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    private void GecmisGorevleriGoster()
+    {
+        if (gecmisGorevlerOverlay == null || scrollGecmisGorevler == null) return;
+        
+        scrollGecmisGorevler.Clear();
+        ScheduleManager sManager = GetScheduleManager();
+        if (sManager != null)
+        {
+            string bugun = System.DateTime.Now.ToString("dd.MM.yyyy");
+            var gecmisList = sManager.tasks.Where(t => t.taskDate != bugun).OrderByDescending(t => t.taskDate).ToList();
+            
+            if (gecmisList.Count == 0)
+            {
+                Label bos = new Label("Geçmiş görev bulunmuyor.");
+                bos.style.color = Color.white;
+                bos.style.marginTop = 20;
+                bos.style.unityTextAlign = TextAnchor.MiddleCenter;
+                scrollGecmisGorevler.Add(bos);
+            }
+            else
+            {
+                string sonTarih = "";
+                foreach (var t in gecmisList)
+                {
+                    if (t.taskDate != sonTarih)
+                    {
+                        Label baslik = new Label(t.taskDate);
+                        baslik.style.color = new StyleColor(new Color(0.37f, 0.65f, 0.96f));
+                        baslik.style.unityFontStyleAndWeight = FontStyle.Bold;
+                        baslik.style.marginTop = 15;
+                        baslik.style.marginBottom = 5;
+                        scrollGecmisGorevler.Add(baslik);
+                        sonTarih = t.taskDate;
+                    }
+                    
+                    Label gorevItem = new Label($"- {t.taskTime} | {t.taskName} {(t.isCompleted ? "(Tamamlandı)" : "(Atlandı)")}");
+                    gorevItem.style.color = t.isCompleted ? new StyleColor(new Color(0.13f, 0.77f, 0.36f)) : new StyleColor(Color.gray);
+                    gorevItem.style.marginBottom = 2;
+                    scrollGecmisGorevler.Add(gorevItem);
+                }
+            }
+        }
+        
+        gecmisGorevlerOverlay.style.display = DisplayStyle.Flex;
     }
 }

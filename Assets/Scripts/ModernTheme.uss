@@ -8,6 +8,11 @@
     --text-muted: rgb(156, 163, 175);
     --warning-color: rgb(251, 191, 36);
     --hover-overlay: rgba(255, 255, 255, 0.05);
+    --danger-color: rgb(239, 68, 68);
+    --info-color: rgb(96, 165, 250);
+    --chat-user-bg: rgb(0, 122, 255);
+    --chat-asistan-bg: rgb(30, 41, 59);
+    --saat-color: rgb(0, 255, 255);
 }
 
 .theme-acik {
@@ -20,18 +25,28 @@
     --text-muted: rgb(107, 114, 128);
     --warning-color: rgb(217, 119, 6);
     --hover-overlay: rgba(0, 0, 0, 0.05);
+    --danger-color: rgb(220, 38, 38);
+    --info-color: rgb(37, 99, 235);
+    --chat-user-bg: rgb(37, 99, 235);
+    --chat-asistan-bg: rgb(229, 231, 235);
+    --saat-color: rgb(5, 150, 105);
 }
 
 .theme-neon {
     --bg-color: rgb(10, 0, 20);
     --surface-color: rgb(20, 5, 40);
     --surface-dark: rgb(15, 0, 30);
-    --primary-color: rgb(255, 0, 255);
+    --primary-color: rgb(176, 38, 255);
     --accent-color: rgb(0, 255, 255);
     --text-color: rgb(255, 255, 255);
     --text-muted: rgb(180, 150, 200);
     --warning-color: rgb(255, 255, 0);
     --hover-overlay: rgba(255, 0, 255, 0.15);
+    --danger-color: rgb(255, 50, 50);
+    --info-color: rgb(200, 100, 255);
+    --chat-user-bg: rgb(255, 0, 255);
+    --chat-asistan-bg: rgb(20, 5, 40);
+    --saat-color: rgb(0, 255, 255);
 }
 
 VisualElement {
@@ -301,4 +316,177 @@ Label, TextElement {
     justify-content: space-around;
     align-items: center;
     flex-shrink: 0;
+}
+
+/* ━━━ MESAJ BALONU TEMA UYUMU ━━━ */
+
+.mesaj-kullanici {
+    background-color: var(--chat-user-bg);
+}
+
+.mesaj-asistan {
+    background-color: var(--chat-asistan-bg);
+}
+
+/* ━━━ GÖREV KARTI TEMA UYUMU ━━━ */
+
+.task-text {
+    color: var(--text-color);
+}
+
+.task-saat {
+    color: var(--saat-color);
+    font-size: 14px;
+    -unity-font-style: bold;
+    margin-bottom: 2px;
+}
+
+/* ━━━ OVERLAY TEMA UYUMU ━━━ */
+
+.overlay-panel {
+    background-color: var(--surface-dark);
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.overlay-title {
+    color: var(--info-color);
+    -unity-font-style: bold;
+}
+
+.overlay-label {
+    color: var(--text-muted);
+}
+
+.overlay-input > .unity-text-field__input {
+    background-color: var(--surface-color);
+    color: var(--text-color);
+    border-radius: 6px;
+}
+
+/* ━━━ TAB BAR ANİMASYONU ━━━ */
+.tab-button {
+    transition-property: unity-background-image-tint-color, scale, border-bottom-width, border-bottom-color;
+    transition-duration: 0.3s;
+    transition-timing-function: ease-in-out;
+    border-bottom-width: 0;
+}
+
+.tab-button-active {
+    border-bottom-width: 3px;
+    border-bottom-color: var(--primary-color);
+    scale: 1.1;
+}
+
+/* ━━━ GÖREV ÖNCELİK RENKLERİ ━━━ */
+.oncelik-dusuk {
+    border-left-width: 4px;
+    border-left-color: var(--accent-color);
+}
+.oncelik-orta {
+    border-left-width: 4px;
+    border-left-color: var(--info-color);
+}
+.oncelik-yuksek {
+    border-left-width: 4px;
+    border-left-color: var(--danger-color);
+}
+
+/* ==========================================
+   CSS / USS FIXES (Arama Çubuğu, Scrollbar, Toggle, Tema Butonları)
+   ========================================== */
+
+/* 1. Arama Çubuğu (Search Bar) Standardizasyonu */
+#inputSohbetArama {
+    min-height: 40px;
+    padding: 0;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+#inputSohbetArama > .unity-base-text-field__input {
+    background-color: var(--surface-color);
+    border-radius: 20px;
+    border-width: 0;
+    color: var(--text-muted);
+    padding-top: 10px;
+    padding-bottom: 10px;
+    padding-left: 15px;
+    padding-right: 15px;
+    height: 100%;
+}
+
+/* 2. Siber Scrollbar (Kaydırma Çubuğu) */
+.unity-scroller {
+    background-color: transparent;
+    width: 6px;
+}
+.unity-scroller__slider {
+    background-color: transparent;
+    width: 6px;
+    margin: 0;
+}
+.unity-scroller__dragger {
+    background-color: var(--surface-color);
+    border-radius: 3px;
+    width: 6px;
+    left: 0;
+}
+.unity-scroller__low-button,
+.unity-scroller__high-button {
+    display: none;
+}
+
+.unity-scroll-view__vertical-scroller { 
+    width: 6px; 
+    margin-right: 2px; 
+}
+.unity-base-slider__tracker { 
+    background-color: transparent; 
+    border-width: 0; 
+}
+.unity-base-slider__dragger { 
+    background-color: rgba(255, 255, 255, 0.15); 
+    border-radius: 3px; 
+    border-width: 0; 
+}
+.unity-base-slider__dragger:hover { 
+    background-color: rgba(255, 255, 255, 0.3); 
+}
+
+/* 3. Checkbox / Toggle Uyumu */
+.unity-toggle__checkmark {
+    background-color: var(--surface-dark);
+    border-color: var(--text-muted);
+    border-width: 1px;
+    border-radius: 4px;
+    -unity-background-image-tint-color: var(--text-color);
+}
+.unity-toggle:checked .unity-toggle__checkmark {
+    background-color: var(--accent-color);
+    border-width: 0;
+    -unity-background-image-tint-color: var(--bg-color);
+}
+
+/* 4. Tema Butonları Bütünlüğü */
+.theme-btn {
+    background-color: var(--surface-dark);
+    color: var(--text-muted);
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-right: 5px;
+    border-width: 1px;
+    border-color: var(--surface-color);
+    -unity-font-style: normal;
+    transition-duration: 0.2s;
+}
+
+/* Aktif (Seçili) Tema Butonları */
+.theme-koyu #btnTemaKoyu,
+.theme-acik #btnTemaAcik,
+.theme-neon #btnTemaNeon {
+    background-color: var(--primary-color);
+    color: #ffffff;
+    border-color: var(--accent-color);
+    -unity-font-style: bold;
 }

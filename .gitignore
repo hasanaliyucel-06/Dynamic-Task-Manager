@@ -9,3 +9,7 @@
 *.csproj
 *.sln
 Assets/_Recovery/
+
+# Siber Asistan API Key Koruması
+Assets/Resources/SiberAsistanConfig.asset
+Assets/Resources/SiberAsistanConfig.asset.meta

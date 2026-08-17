@@ -3,6 +3,10 @@ using UnityEngine.UIElements;
 using System.Collections.Generic;
 using System;
 
+#if UNITY_ANDROID
+using Unity.Notifications.Android;
+#endif
+
 /// <summary>
 /// Uygulama içi bildirimleri yöneten sınıf.
 /// Görev saati geldiğinde UI Toolkit üzerinden banner gösterir.
@@ -24,18 +28,40 @@ public class BildirimYonetici : MonoBehaviour
 
         if (btnBildirimKapat != null)
         {
-            btnBildirimKapat.clicked += () => {
-                if (bildirimBanner != null)
-                {
-                    bildirimBanner.style.top = -300; // Tamamen Gizle
-                }
-            };
+            btnBildirimKapat.clicked -= BildirimKapat;
+            btnBildirimKapat.clicked += BildirimKapat;
         }
 
         scheduleManager = FindFirstObjectByType<ScheduleManager>();
 
+        // Önceki InvokeRepeating'i temizle (çift çağrı önleme)
+        CancelInvoke("BildirimKontrol");
         // Her 10 saniyede bir saat kontrolü yap
         InvokeRepeating("BildirimKontrol", 2f, 10f);
+
+#if UNITY_ANDROID
+        var channel = new AndroidNotificationChannel()
+        {
+            Id = "asistan_kanal",
+            Name = "Siber Asistan Bildirimleri",
+            Importance = Importance.High,
+            Description = "Görev ve Hatırlatma Bildirimleri"
+        };
+        AndroidNotificationCenter.RegisterNotificationChannel(channel);
+#endif
+    }
+
+    private void BildirimKapat()
+    {
+        if (bildirimBanner != null)
+        {
+            bildirimBanner.style.top = -300;
+        }
+    }
+
+    void OnDisable()
+    {
+        CancelInvoke();
     }
 
     private void BildirimKontrol()
@@ -87,12 +113,75 @@ public class BildirimYonetici : MonoBehaviour
                 bildirimBanner.style.top = -300;
             }).StartingIn(8000);
             
-            // Ses ve Titreşim
             if (SesYonetici.Instance != null)
             {
                 SesYonetici.Instance.PlayNotification();
+            }
+
+#if UNITY_ANDROID
+            var notification = new AndroidNotification();
+            notification.Title = "Siber Asistan";
+            notification.Text = metin;
+            notification.FireTime = System.DateTime.Now;
+            AndroidNotificationCenter.SendNotification(notification, "asistan_kanal");
+#endif
+            // Ses ve Titreşim
+            if (SesYonetici.Instance != null)
+            {
                 SesYonetici.Instance.Vibrate(true); // Ağır titreşim
             }
         }
+    }
+
+    void OnApplicationPause(bool pauseStatus)
+    {
+        if (pauseStatus)
+        {
+            ArkaPlanBildirimleriniAyarla();
+        }
+        else
+        {
+#if UNITY_ANDROID
+            AndroidNotificationCenter.CancelAllScheduledNotifications();
+#endif
+        }
+    }
+
+    void OnApplicationQuit()
+    {
+        ArkaPlanBildirimleriniAyarla();
+    }
+
+    private void ArkaPlanBildirimleriniAyarla()
+    {
+#if UNITY_ANDROID
+        AndroidNotificationCenter.CancelAllScheduledNotifications();
+        if (scheduleManager == null) return;
+
+        DateTime simdi = DateTime.Now;
+        string bugun = simdi.ToString("dd.MM.yyyy");
+
+        foreach (var gorev in scheduleManager.tasks)
+        {
+            if (!gorev.isCompleted && gorev.taskDate == bugun)
+            {
+                if (DateTime.TryParseExact(gorev.taskTime, "HH:mm", null, System.Globalization.DateTimeStyles.None, out DateTime gorevSaati))
+                {
+                    DateTime gercekGorevSaati = new DateTime(simdi.Year, simdi.Month, simdi.Day, gorevSaati.Hour, gorevSaati.Minute, 0);
+                    DateTime bildirimSaati = gercekGorevSaati.AddMinutes(-gorev.hatirlaticiDakikaOnce);
+
+                    // Sadece gelecekteki bildirimleri kur
+                    if (bildirimSaati > simdi)
+                    {
+                        var notification = new AndroidNotification();
+                        notification.Title = "Siber Asistan";
+                        notification.Text = $"Sıradaki Görev ({gorev.hatirlaticiDakikaOnce} dk kaldı):\n{gorev.taskName}";
+                        notification.FireTime = bildirimSaati;
+                        AndroidNotificationCenter.SendNotification(notification, "asistan_kanal");
+                    }
+                }
+            }
+        }
+#endif
     }
 }
