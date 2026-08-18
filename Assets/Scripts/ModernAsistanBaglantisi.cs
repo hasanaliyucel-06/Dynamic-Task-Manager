@@ -53,8 +53,14 @@ public class ModernAsistanBaglantisi : MonoBehaviour
         SohbetGecmisiniYukle();
     }
 
-    private void SohbetGecmisiniYukle()
+    public void SohbetGecmisiniYukle()
     {
+        // Önce mevcut ekranı temizle
+        if (scrollSohbet != null)
+        {
+            scrollSohbet.Clear();
+        }
+
         string path = Path.Combine(Application.persistentDataPath, "chat.json");
         string json = "";
 
@@ -63,7 +69,13 @@ public class ModernAsistanBaglantisi : MonoBehaviour
             json = PlayerPrefs.GetString("SohbetGecmisi");
             try
             {
-                File.WriteAllText(path, json);
+                string tmpPath = path + ".tmp";
+                File.WriteAllText(tmpPath, json);
+                if (File.Exists(tmpPath))
+                {
+                    if (File.Exists(path)) File.Delete(path);
+                    File.Move(tmpPath, path);
+                }
                 PlayerPrefs.DeleteKey("SohbetGecmisi");
                 PlayerPrefs.Save();
             }
@@ -124,9 +136,15 @@ public class ModernAsistanBaglantisi : MonoBehaviour
         }
         string json = JsonUtility.ToJson(sohbetGecmisi, true);
         string path = Path.Combine(Application.persistentDataPath, "chat.json");
+        string tmpPath = path + ".tmp";
         try
         {
-            File.WriteAllText(path, json);
+            File.WriteAllText(tmpPath, json);
+            if (File.Exists(tmpPath))
+            {
+                if (File.Exists(path)) File.Delete(path);
+                File.Move(tmpPath, path);
+            }
         }
         catch (System.Exception e)
         {

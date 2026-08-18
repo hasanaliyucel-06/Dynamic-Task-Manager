@@ -131,9 +131,9 @@ public class ScheduleManager : MonoBehaviour
         }
     }
 
-    public void RemoveTask(string taskName)
+    public void RemoveTask(string taskId)
     {
-        GorevData taskToRemove = tasks.Find(t => t.taskName == taskName);
+        GorevData taskToRemove = tasks.Find(t => t.id == taskId);
         if (taskToRemove != null)
         {
             tasks.Remove(taskToRemove);
@@ -144,9 +144,9 @@ public class ScheduleManager : MonoBehaviour
     /// <summary>
     /// Görevi tamamlandı olarak işaretler (silmez, kalıcı olarak kaydeder).
     /// </summary>
-    public void MarkTaskCompleted(string taskName)
+    public void MarkTaskCompleted(string taskId)
     {
-        GorevData task = tasks.Find(t => t.taskName == taskName && !t.isCompleted);
+        GorevData task = tasks.Find(t => t.id == taskId && !t.isCompleted);
         if (task != null)
         {
             task.isCompleted = true;
@@ -155,9 +155,9 @@ public class ScheduleManager : MonoBehaviour
         }
     }
 
-    public void UpdateTask(string oldName, string newName, string newTime, int newDuration, string yeniKategori = "Genel", int yeniOncelik = 1, string yeniNotlar = "")
+    public void UpdateTask(string taskId, string newName, string newTime, int newDuration, string yeniKategori = "Genel", int yeniOncelik = 1, string yeniNotlar = "")
     {
-        GorevData taskToUpdate = tasks.Find(t => t.taskName == oldName);
+        GorevData taskToUpdate = tasks.Find(t => t.id == taskId);
         if (taskToUpdate != null)
         {
             taskToUpdate.taskName = newName;
@@ -174,7 +174,7 @@ public class ScheduleManager : MonoBehaviour
     /// <summary>
     /// Yeni görev ekler. Aynı tarih+saat+isimde görev zaten varsa çift kayıt oluşturmaz.
     /// </summary>
-    public void AddTask(string tarih, string time, string taskName, int duration, bool isStrict = false, bool isRepeating = false, string kategori = "Genel", int hatirlatici = 15, int oncelik = 1, string notlar = "")
+    public void AddTask(string tarih, string time, string taskName, int duration, bool isStrict = false, bool isRepeating = false, string kategori = "Genel", int hatirlatici = 15, int oncelik = 1, string notlar = "", string id = "")
     {
         // Çift kayıt kontrolü: Aynı tarih, saat ve isimdeki görev zaten varsa ekleme
         bool zatenVar = tasks.Exists(t => t.taskDate == tarih && t.taskTime == time && t.taskName == taskName);
@@ -184,7 +184,7 @@ public class ScheduleManager : MonoBehaviour
             return;
         }
 
-        GorevData newTask = new GorevData(tarih, time, taskName, duration, isStrict, false, isRepeating, kategori, hatirlatici, oncelik, notlar);
+        GorevData newTask = new GorevData(tarih, time, taskName, duration, isStrict, false, isRepeating, kategori, hatirlatici, oncelik, notlar, id);
         tasks.Add(newTask);
 
         onScheduleUpdated?.Invoke();
@@ -200,9 +200,16 @@ public class ScheduleManager : MonoBehaviour
         string json = JsonUtility.ToJson(wrapper, true);
         
         string path = Path.Combine(Application.persistentDataPath, "tasks.json");
+        string tmpPath = path + ".tmp";
+
         try
         {
-            File.WriteAllText(path, json);
+            File.WriteAllText(tmpPath, json);
+            if (File.Exists(tmpPath))
+            {
+                if (File.Exists(path)) File.Delete(path);
+                File.Move(tmpPath, path);
+            }
         }
         catch (System.Exception e)
         {
@@ -256,6 +263,16 @@ public class ScheduleManager : MonoBehaviour
                 string bugunTarih = System.DateTime.Now.ToString("dd.MM.yyyy");
                 bool degisiklikVar = false;
 
+                // Eski verilere ID ataması
+                foreach (var t in this.tasks)
+                {
+                    if (string.IsNullOrEmpty(t.id))
+                    {
+                        t.id = System.Guid.NewGuid().ToString();
+                        degisiklikVar = true;
+                    }
+                }
+
                 // Sadece bugünden önceki tekrarlayan görevleri bul ve bugüne kopyala
                 List<GorevData> eklenecekler = new List<GorevData>();
                 foreach (var t in this.tasks)
@@ -306,7 +323,7 @@ public class ScheduleManager : MonoBehaviour
                     foreach (var gorev in this.tasks) {
                         if (gorev.taskDate == bugunTarih)
                         {
-                            _cachedNavigator.GorevKartiEkle(gorev.taskDate, gorev.taskTime, gorev.taskName, gorev.durationMinutes.ToString(), gorev.isStrictBlock, false, gorev.isRepeating, gorev.isCompleted, gorev.kategori, gorev.oncelik, gorev.notlar);
+                            _cachedNavigator.GorevKartiEkle(gorev.taskDate, gorev.taskTime, gorev.taskName, gorev.durationMinutes.ToString(), gorev.isStrictBlock, false, gorev.isRepeating, gorev.isCompleted, gorev.kategori, gorev.oncelik, gorev.notlar, gorev.id);
                         }
                     }
                 }
@@ -377,6 +394,37 @@ public class ScheduleManager : MonoBehaviour
 
         if (toplamGorev == 0) return 0f;
         return ((float)bitenGorev / toplamGorev) * 100f;
+    }
+
+    /// <summary>
+    /// Son 7 günün günlük tamamlanma yüzdelerini (0-100) dizi olarak döndürür (0: 6 gün önce, ..., 6: bugün).
+    /// Çubuk Grafik (Bar Chart) için kullanılır.
+    /// </summary>
+    public float[] HaftalikGunlukBasariOranlari()
+    {
+        float[] oranlar = new float[7];
+        System.DateTime bugun = System.DateTime.Now.Date;
+
+        for (int i = 0; i < 7; i++)
+        {
+            System.DateTime hedefGun = bugun.AddDays(-6 + i); // i=0 -> 6 gün önce, i=6 -> bugün
+            int toplam = 0;
+            int biten = 0;
+
+            foreach (var t in tasks)
+            {
+                if (System.DateTime.TryParseExact(t.taskDate, "dd.MM.yyyy", null, System.Globalization.DateTimeStyles.None, out System.DateTime dt))
+                {
+                    if (dt.Date == hedefGun)
+                    {
+                        toplam++;
+                        if (t.isCompleted) biten++;
+                    }
+                }
+            }
+            oranlar[i] = toplam > 0 ? ((float)biten / toplam) * 100f : 0f;
+        }
+        return oranlar;
     }
 }
 

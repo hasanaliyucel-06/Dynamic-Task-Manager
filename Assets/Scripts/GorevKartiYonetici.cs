@@ -19,6 +19,7 @@ public class GorevKartiYonetici : MonoBehaviour
 
     // Düzenleme durumu
     private string duzenlenenGorevEskiAd = "";
+    private string duzenlenenGorevId = "";
     private string duzenlenenGorevEskiTarih = "";
     private int duzenlenenOncelik = 1;
     private VisualElement gorevDuzenleOverlay;
@@ -151,15 +152,13 @@ public class GorevKartiYonetici : MonoBehaviour
     /// </summary>
     private void AnimasyonluEkle(VisualElement kart)
     {
-        // Başlangıç: görünmez ve 20px aşağıda
-        kart.style.opacity = 0f;
-        kart.style.translate = new StyleTranslate(new Translate(0, 20, 0));
+        kart.AddToClassList("kart-animasyonlu");
+        kart.AddToClassList("kart-silindi"); // Başlangıç durumu (gizli ve sağda)
 
-        // Bir sonraki frame'de animasyonu başlat (transition çalışması için)
+        // Bir frame sonra silindi sınıfını kaldırarak normal hale (0,0) kaymasını sağla
         kart.schedule.Execute(() => {
-            kart.style.opacity = 1f;
-            kart.style.translate = new StyleTranslate(new Translate(0, 0, 0));
-        }).StartingIn(30);
+            kart.RemoveFromClassList("kart-silindi");
+        }).StartingIn(10);
     }
 
     /// <summary>
@@ -168,14 +167,14 @@ public class GorevKartiYonetici : MonoBehaviour
     /// </summary>
     private void AnimasyonluKaldir(VisualElement kart, System.Action onComplete = null)
     {
-        kart.style.opacity = 0f;
-        kart.style.translate = new StyleTranslate(new Translate(-50, 0, 0));
+        kart.AddToClassList("kart-animasyonlu");
+        kart.AddToClassList("kart-silindi"); // Sağa kayarak yok olur
 
-        // Animasyon süresi kadar bekle sonra DOM'dan kaldır
+        // Animasyon süresi (300ms) kadar bekle sonra DOM'dan kaldır
         kart.schedule.Execute(() => {
             kart.RemoveFromHierarchy();
             onComplete?.Invoke();
-        }).StartingIn(350);
+        }).StartingIn(300);
     }
 
     /// <summary>
@@ -183,12 +182,10 @@ public class GorevKartiYonetici : MonoBehaviour
     /// </summary>
     private void TamamlamaAnimasyonu(VisualElement kart, Label gorevYazisi, VisualElement butonKutusu)
     {
-        // Pulse: büyüt
-        kart.style.scale = new StyleScale(new Scale(new Vector3(1.03f, 1.03f, 1f)));
+        kart.AddToClassList("kart-animasyonlu");
+        kart.AddToClassList("kart-tamamlandi"); // Yeşile döner ve kayar
 
         kart.schedule.Execute(() => {
-            // Pulse: küçült + soluk yap
-            kart.style.scale = new StyleScale(new Scale(Vector3.one));
             kart.style.opacity = 0.4f;
             gorevYazisi.style.color = new StyleColor(new Color(0.6f, 0.6f, 0.6f));
 
@@ -199,7 +196,7 @@ public class GorevKartiYonetici : MonoBehaviour
             tamamIcon.style.fontSize = 24;
             tamamIcon.style.unityFontStyleAndWeight = FontStyle.Bold;
             butonKutusu.Add(tamamIcon);
-        }).StartingIn(200);
+        }).StartingIn(300);
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -331,8 +328,10 @@ public class GorevKartiYonetici : MonoBehaviour
     /// <summary>
     /// Görev listesine yeni bir kart ekler. Kronolojik sıraya yerleştirir.
     /// </summary>
-    public void GorevKartiEkle(string tarih, string saat, string gorevAdi, string sure = "", bool katiMi = false, bool kaydet = true, bool isRepeating = false, bool isAlreadyCompleted = false, string kategori = "Genel", int oncelik = 1, string notlar = "")
+    public void GorevKartiEkle(string tarih, string saat, string gorevAdi, string sure = "", bool katiMi = false, bool kaydet = true, bool isRepeating = false, bool isAlreadyCompleted = false, string kategori = "Genel", int oncelik = 1, string notlar = "", string gorevId = "")
     {
+        if (string.IsNullOrEmpty(gorevId)) gorevId = System.Guid.NewGuid().ToString();
+
         if (gorevListesi == null) return;
 
         VisualElement kart = new VisualElement();
@@ -349,6 +348,8 @@ public class GorevKartiYonetici : MonoBehaviour
             kart.style.borderLeftColor = new StyleColor(Color.red);
         }
 
+        // Sürükle ve Bırak iptal edildi.
+
         // Tamamlanmış görevse soluk göster (animasyonsuz)
         if (isAlreadyCompleted)
         {
@@ -364,7 +365,7 @@ public class GorevKartiYonetici : MonoBehaviour
         if (!isAlreadyCompleted)
         {
             solPanel.RegisterCallback<ClickEvent>(evt => {
-                AcGorevDuzenle(tarih, saat, gorevAdi, sure, katiMi, isRepeating, kategori, oncelik, notlar);
+                AcGorevDuzenle(tarih, saat, gorevAdi, sure, katiMi, isRepeating, kategori, oncelik, notlar, gorevId);
             });
         }
 
@@ -458,7 +459,7 @@ public class GorevKartiYonetici : MonoBehaviour
                 ScheduleManager sManager = GetScheduleManager();
                 if (sManager != null)
                 {
-                    sManager.MarkTaskCompleted(gorevAdi);
+                    sManager.MarkTaskCompleted(gorevId);
                 }
 
                 // Tamamlama animasyonu
@@ -479,7 +480,7 @@ public class GorevKartiYonetici : MonoBehaviour
                     // Undo: tamamlamayı geri al
                     if (sManager != null)
                     {
-                        var task = sManager.tasks.Find(t => t.taskName == gorevAdi && t.isCompleted);
+                        var task = sManager.tasks.Find(t => t.id == gorevId && t.isCompleted);
                         if (task != null)
                         {
                             task.isCompleted = false;
@@ -498,11 +499,11 @@ public class GorevKartiYonetici : MonoBehaviour
                 ScheduleManager sManager = GetScheduleManager();
                 if (sManager != null)
                 {
-                    sManager.RemoveTask(gorevAdi);
+                    sManager.RemoveTask(gorevId);
                     string yarinTarih = System.DateTime.Now.AddDays(1).ToString("dd.MM.yyyy");
                     int sureInt = 0;
                     int.TryParse(sure, out sureInt);
-                    sManager.AddTask(yarinTarih, saat, gorevAdi, sureInt, katiMi, isRepeating, kategori);
+                    sManager.AddTask(yarinTarih, saat, gorevAdi, sureInt, katiMi, isRepeating, kategori, 15, oncelik, notlar, gorevId);
                 }
 
                 // Silme animasyonu
@@ -523,12 +524,12 @@ public class GorevKartiYonetici : MonoBehaviour
                     {
                         // Yarınki görevi sil, bugünkü geri ekle
                         string yarinTarih2 = System.DateTime.Now.AddDays(1).ToString("dd.MM.yyyy");
-                        var yarinGorev = sManager.tasks.Find(t => t.taskName == gorevAdi && t.taskDate == yarinTarih2);
+                        var yarinGorev = sManager.tasks.Find(t => t.id == gorevId && t.taskDate == yarinTarih2);
                         if (yarinGorev != null) sManager.tasks.Remove(yarinGorev);
                         
                         int sureInt2 = 0;
                         int.TryParse(sure, out sureInt2);
-                        sManager.AddTask(tarih, saat, gorevAdi, sureInt2, katiMi, isRepeating, kategori);
+                        sManager.AddTask(tarih, saat, gorevAdi, sureInt2, katiMi, isRepeating, kategori, 15, oncelik, notlar, gorevId);
                         sManager.SaveTasks();
                     }
                     ListeyiYenidenCiz();
@@ -550,10 +551,13 @@ public class GorevKartiYonetici : MonoBehaviour
                     string silinecekSure = sure;
                     bool silinecekKati = katiMi;
                     bool silinecekTekrar = isRepeating;
+                    int silinecekOncelik = oncelik;
+                    string silinecekNotlar = notlar;
+                    string silinecekId = gorevId;
 
                     if (sManager != null)
                     {
-                        sManager.RemoveTask(gorevAdi);
+                        sManager.RemoveTask(gorevId);
                     }
 
                     // Silme animasyonu
@@ -575,7 +579,7 @@ public class GorevKartiYonetici : MonoBehaviour
                         {
                             int sureInt3 = 0;
                             int.TryParse(silinecekSure, out sureInt3);
-                            sManager.AddTask(silinecekTarih, silinecekSaat, silinecekAd, sureInt3, silinecekKati, silinecekTekrar, kategori);
+                            sManager.AddTask(silinecekTarih, silinecekSaat, silinecekAd, sureInt3, silinecekKati, silinecekTekrar, kategori, 15, silinecekOncelik, silinecekNotlar, silinecekId);
                         }
                         ListeyiYenidenCiz();
                     });
@@ -617,7 +621,7 @@ public class GorevKartiYonetici : MonoBehaviour
             {
                 int sureInt = 0;
                 int.TryParse(sure, out sureInt);
-                sManager.AddTask(tarih, saat, gorevAdi, sureInt, katiMi, isRepeating, kategori);
+                sManager.AddTask(tarih, saat, gorevAdi, sureInt, katiMi, isRepeating, kategori, 15, oncelik, notlar, gorevId);
             }
         }
     }
@@ -714,7 +718,7 @@ public class GorevKartiYonetici : MonoBehaviour
             {
                 if (t.taskDate == bugununTarihi)
                 {
-                    GorevKartiEkle(t.taskDate, t.taskTime, t.taskName, t.durationMinutes.ToString(), t.isStrictBlock, false, t.isRepeating, t.isCompleted, t.kategori, t.oncelik, t.notlar);
+                    GorevKartiEkle(t.taskDate, t.taskTime, t.taskName, t.durationMinutes.ToString(), t.isStrictBlock, false, t.isRepeating, t.isCompleted, t.kategori, t.oncelik, t.notlar, t.id);
                 }
             }
         }
@@ -738,10 +742,11 @@ public class GorevKartiYonetici : MonoBehaviour
         }
     }
 
-    private void AcGorevDuzenle(string tarih, string eskiSaat, string eskiAd, string eskiSure, bool katiMi, bool isRepeating, string kategori, int oncelik, string notlar)
+    private void AcGorevDuzenle(string tarih, string eskiSaat, string eskiAd, string eskiSure, bool katiMi, bool isRepeating, string kategori, int oncelik, string notlar, string gorevId)
     {
         if (gorevDuzenleOverlay == null) return;
 
+        duzenlenenGorevId = gorevId;
         duzenlenenGorevEskiAd = eskiAd;
         duzenlenenGorevEskiTarih = tarih;
         duzenlenenOncelik = oncelik;
@@ -780,7 +785,7 @@ public class GorevKartiYonetici : MonoBehaviour
         ScheduleManager sManager = GetScheduleManager();
         if (sManager != null)
         {
-            sManager.UpdateTask(duzenlenenGorevEskiAd, yeniAd, yeniZaman, sureInt, yeniKategori, duzenlenenOncelik, yeniNotlar);
+            sManager.UpdateTask(duzenlenenGorevId, yeniAd, yeniZaman, sureInt, yeniKategori, duzenlenenOncelik, yeniNotlar);
         }
 
         if (gorevDuzenleOverlay != null) gorevDuzenleOverlay.style.display = DisplayStyle.None;

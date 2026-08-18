@@ -18,11 +18,10 @@ public class SistemYonetici : MonoBehaviour
     private Label lblBugunBasari;
     private Label lblHaftaBasari;
     private VisualElement barBugunBasari;
-    private VisualElement barHaftaBasari;
+    private VisualElement haftalikChartContainer;
 
     // Faz 4: Ayarlar UI
     private Button btnTemaKoyu;
-    private Button btnTemaAcik;
     private Button btnTemaNeon;
     private Toggle toggleSesKapat;
     private VisualElement uiRoot;
@@ -40,7 +39,7 @@ public class SistemYonetici : MonoBehaviour
         lblBugunBasari = root.Q<Label>("lblBugunBasari");
         lblHaftaBasari = root.Q<Label>("lblHaftaBasari");
         barBugunBasari = root.Q<VisualElement>("barBugunBasari");
-        barHaftaBasari = root.Q<VisualElement>("barHaftaBasari");
+        haftalikChartContainer = root.Q<VisualElement>("haftalikChartContainer");
 
         btnVerileriYedekle = root.Q<Button>("btnVerileriYedekle");
         inputYedekJSON = root.Q<TextField>("inputYedekJSON");
@@ -60,7 +59,6 @@ public class SistemYonetici : MonoBehaviour
         }
 
         btnTemaKoyu = root.Q<Button>("btnTemaKoyu");
-        btnTemaAcik = root.Q<Button>("btnTemaAcik");
         btnTemaNeon = root.Q<Button>("btnTemaNeon");
         toggleSesKapat = root.Q<Toggle>("toggleSesKapat");
         uiRoot = root;
@@ -73,6 +71,7 @@ public class SistemYonetici : MonoBehaviour
 
         // Temayı ve Ses Ayarını Yükle
         string kayitliTema = PlayerPrefs.GetString("SeciliTema", "theme-koyu");
+        if (kayitliTema == "theme-acik") kayitliTema = "theme-koyu"; // Açık tema kaldırıldığı için varsayılana dön
         TemaUygula(kayitliTema);
 
         if (toggleSesKapat != null)
@@ -83,7 +82,6 @@ public class SistemYonetici : MonoBehaviour
 
         // Named handler'lar ile event bağlama (sızıntı önleme)
         if (btnTemaKoyu != null) { btnTemaKoyu.clicked -= OnTemaKoyuClicked; btnTemaKoyu.clicked += OnTemaKoyuClicked; }
-        if (btnTemaAcik != null) { btnTemaAcik.clicked -= OnTemaAcikClicked; btnTemaAcik.clicked += OnTemaAcikClicked; }
         if (btnTemaNeon != null) { btnTemaNeon.clicked -= OnTemaNeonClicked; btnTemaNeon.clicked += OnTemaNeonClicked; }
 
         if (_cachedScheduleManager != null)
@@ -107,7 +105,6 @@ public class SistemYonetici : MonoBehaviour
 
     // Named event handler'lar (event sızıntısını önler)
     private void OnTemaKoyuClicked() => TemaUygula("theme-koyu");
-    private void OnTemaAcikClicked() => TemaUygula("theme-acik");
     private void OnTemaNeonClicked() => TemaUygula("theme-neon");
 
     private void OnSesToggleChanged(ChangeEvent<bool> evt)
@@ -193,7 +190,19 @@ public class SistemYonetici : MonoBehaviour
             if (!string.IsNullOrEmpty(yedek.goalsJson)) System.IO.File.WriteAllText(goalsPath, yedek.goalsJson);
             if (!string.IsNullOrEmpty(yedek.chatJson)) System.IO.File.WriteAllText(chatPath, yedek.chatJson);
 
-            GosterDurum(lblYedekDurum, "Başarılı! Yeniden başlatın.", true);
+            // Anında UI Güncellemesi
+            if (_cachedGorevKartiYonetici != null) _cachedGorevKartiYonetici.TumGorevleriTemizle();
+
+            if (_cachedScheduleManager != null) _cachedScheduleManager.LoadTasks();
+            else { var sm = FindFirstObjectByType<ScheduleManager>(); if (sm != null) sm.LoadTasks(); }
+
+            var ty = FindFirstObjectByType<TakvimYonetici>();
+            if (ty != null) { ty.aktifHedefler.Clear(); ty.HedefleriYukle(); }
+
+            var asistan = FindFirstObjectByType<ModernAsistanBaglantisi>();
+            if (asistan != null) asistan.SohbetGecmisiniYukle();
+
+            GosterDurum(lblYedekDurum, "Yedek başarıyla yüklendi!", true);
             inputYedekJSON.value = "";
         }
         catch (System.Exception e)
@@ -227,10 +236,58 @@ public class SistemYonetici : MonoBehaviour
         if (lblBugunBasari != null) lblBugunBasari.text = $"%{Mathf.RoundToInt(bugunYuzde)}";
         if (barBugunBasari != null) barBugunBasari.style.width = new Length(bugunYuzde, LengthUnit.Percent);
 
-        // Haftalık İstatistik
+        // Haftalık İstatistik (Çubuk Grafik)
         float haftaYuzde = _cachedScheduleManager.HaftalikBasariOrani();
         if (lblHaftaBasari != null) lblHaftaBasari.text = $"%{Mathf.RoundToInt(haftaYuzde)}";
-        if (barHaftaBasari != null) barHaftaBasari.style.width = new Length(haftaYuzde, LengthUnit.Percent);
+        
+        if (haftalikChartContainer != null)
+        {
+            haftalikChartContainer.Clear();
+            float[] oranlar = _cachedScheduleManager.HaftalikGunlukBasariOranlari();
+            string[] gunIsimleri = { "6G", "5G", "4G", "3G", "2G", "Dün", "Bgn" };
+
+            for (int i = 0; i < 7; i++)
+            {
+                float oran = oranlar[i];
+                
+                // Kolon sarmalayıcı (Aşağıdan hizalamak için)
+                VisualElement col = new VisualElement();
+                col.style.width = 30;
+                col.style.height = new Length(100, LengthUnit.Percent);
+                col.style.justifyContent = Justify.FlexEnd;
+                col.style.alignItems = Align.Center;
+
+                // Yüzde yazısı
+                if (oran > 0)
+                {
+                    Label lblOran = new Label($"%{Mathf.RoundToInt(oran)}");
+                    lblOran.style.fontSize = 9;
+                    lblOran.style.color = new StyleColor(new Color(0.37f, 0.64f, 0.98f));
+                    lblOran.style.marginBottom = 2;
+                    col.Add(lblOran);
+                }
+
+                // Çubuk
+                VisualElement bar = new VisualElement();
+                bar.style.width = 16;
+                // En az %2 yükseklik ver ki 0 olan günlerde minik bir nokta belli olsun
+                float barHeight = Mathf.Max(oran, 2f);
+                bar.style.height = new Length(barHeight, LengthUnit.Percent);
+                bar.style.backgroundColor = new StyleColor(new Color(0.37f, 0.64f, 0.98f)); // #60A5FA
+                bar.style.borderTopLeftRadius = 4;
+                bar.style.borderTopRightRadius = 4;
+                col.Add(bar);
+
+                // Gün ismi
+                Label lblGun = new Label(gunIsimleri[i]);
+                lblGun.style.fontSize = 10;
+                lblGun.style.color = Color.white;
+                lblGun.style.marginTop = 4;
+                col.Add(lblGun);
+
+                haftalikChartContainer.Add(col);
+            }
+        }
     }
 
     private void TemaUygula(string temaAdi)

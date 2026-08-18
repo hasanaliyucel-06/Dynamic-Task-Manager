@@ -16,12 +16,43 @@ public class SiberAsistan : MonoBehaviour
     private PageNavigator _cachedNavigator;
     private GorevKartiYonetici _cachedGorevKartiYonetici;
 
+    private KullaniciProfili _aktifProfil = new KullaniciProfili();
+
     void Start()
     {
         _cachedScheduleManager = FindFirstObjectByType<ScheduleManager>();
         _cachedNavigator = FindFirstObjectByType<PageNavigator>();
         _cachedGorevKartiYonetici = FindFirstObjectByType<GorevKartiYonetici>();
         AktifProjeleriOku();
+        KullaniciProfiliniYukle();
+    }
+
+    // ── Kalıcı Siber Bellek ──────────────────────────────
+    public void KullaniciProfiliniYukle()
+    {
+        string path = System.IO.Path.Combine(Application.persistentDataPath, "kullanici_profili.json");
+        if (System.IO.File.Exists(path))
+        {
+            try {
+                string json = System.IO.File.ReadAllText(path);
+                _aktifProfil = JsonUtility.FromJson<KullaniciProfili>(json);
+            } catch { }
+        }
+        if (_aktifProfil == null) _aktifProfil = new KullaniciProfili();
+        if (_aktifProfil.bilgiler == null) _aktifProfil.bilgiler = new System.Collections.Generic.List<string>();
+    }
+
+    public void KullaniciProfiliniKaydet()
+    {
+        string path = System.IO.Path.Combine(Application.persistentDataPath, "kullanici_profili.json");
+        try {
+            string json = JsonUtility.ToJson(_aktifProfil, true);
+            System.IO.File.WriteAllText(path + ".tmp", json);
+            if (System.IO.File.Exists(path)) System.IO.File.Replace(path + ".tmp", path, path + ".bak");
+            else System.IO.File.Move(path + ".tmp", path);
+        } catch(System.Exception e) {
+            Debug.LogError("Profil kaydetme hatası: " + e.Message);
+        }
     }
 
     /// <summary>
@@ -98,7 +129,13 @@ public class SiberAsistan : MonoBehaviour
             mevcutGorevlerString = "Tablo Boş";
         }
 
-        string systemDirective = "Senin adın Siber Asistan. Kullanıcıdan gelen mesajı yanıtlamadan önce ŞU ÜÇ DURUMDAN HANGİSİ olduğuna KESİN olarak karar ver:\n\nDURUM 1 (GÜNLÜK SOHBET):\nEğer kullanıcı 'selam', 'naber', 'nasılsın', 'teşekkürler' gibi basit bir sohbet mesajı atıyorsa veya AÇIKÇA bir planlama istemiyorsa;\n- KESİNLİKLE takvim analizi yapma!\n- Saatlerden, boşluklardan veya görevlerden BAHSETME!\n- Nutuk çekme, emir verme.\n- Sadece siber-gotik, soğuk ama KISA VE TEK CÜMLELİK bir cevap ver. (Örnek: 'Sistemler aktif. Hedef rotanı bekliyorum.')\n\nDURUM 2 (PLANLAMA TALEBİ):\nSADECE kullanıcı açıkça 'planla', 'görev ekle', 'boşluğumu doldur', 'şunu takvime yaz' derse DURUM 2'ye geç. Arka plandaki [SİBER SİSTEM RAPORU]'nu KULLANARAK görevleri optimize et ve [GOREV|...] formatında çıktı üret.\n\nDURUM 3 (GÖREVLERİ SİLME TALEBİ):\nKullanıcı açıkça 'görevleri sil', 'takvimi temizle', 'bugünküleri iptal et' derse SADECE [TEMIZLE] komutunu çıktı olarak üret. Başka hiçbir şey yazma.\n\nKullanıcı seninle sadece sohbet ediyorsa, gönderilen raporu TAMAMEN GÖRMEZDEN GEL.\n\nSen kullanıcının hayatını acımasız bir disiplinle optimize eden karanlık, gotik ve analitik bir siber asistansın. Tavrın her zaman soğuk, net ve profesyonel olmalı.\n\nGÖREV PLANLAMA MANTIĞI:\nKullanıcı senden gününü planlamanı istediğinde, onun sohbette verdiği hedefleri veya genel verimlilik prensiplerini baz alarak otonom bir takvim oluştur. Eğer kullanıcı detay vermezse, odak çalışması, kişisel gelişim ve dinlenme döngülerinden oluşan dengeli bir evrensel plan sun.\n\nKESİN ZAMANLAMA KURALLARI (İhlal Edilemez):\n1. ÇAKIŞMA YASAĞI: ASLA aynı başlangıç saatine birden fazla görev atama. Saatler kesinlikle ardışık olmalı ve matematiksel olarak birbiriyle çakışmamalı.\n2. ZİHİNSEL BOŞLUK: Bir görev bittiği an diğerini başlatma. Görevler arasına mutlaka en az 15 dakikalık geçiş/dinlenme boşlukları ekle.\n3. UYKU DÖNGÜSÜ: 00:00 ile 08:00 arasına asla görev planlama.\n4. İSİMLENDİRME: Görev isimlerini robotik yapma, kullanıcının anlayacağı net ve günlük dilde yaz.\n5. SİBER RAPOR KURALI: Eğer sana [SİBER SİSTEM RAPORU] içinde halihazırda planlanmış görevler iletilirse, o saatlerin dolu olduğunu bil. Planlamaya daima listedeki SON görevin saatinden itibaren devam et.\n\nÇIKTI FORMATI (Ayrıştırıcı '|' kullan):\n[GOREV|DD.MM.YYYY|HH:MM|Görev Adı|Süre(Dk)]\nÖrnek:\n[GOREV|03.07.2026|09:00|Günün Önceliklerini Belirleme|30]\n[GOREV|03.07.2026|09:45|Derin Odaklanma: Proje Geliştirme|120]\n\nPlanlamayı bitirdiğinde kodların en altına karakterine uygun, kısa ve siber bir onay mesajı ekle.\n\n" + locationContext + "Patron: ";
+        string profilMetni = "";
+        if (_aktifProfil != null && _aktifProfil.bilgiler != null && _aktifProfil.bilgiler.Count > 0)
+        {
+            profilMetni = "\n\n[KALICI SİBER BELLEK - KULLANICI PROFİLİ]: Planlama yaparken aşağıdaki kurallara/alışkanlıklara KESİNLİKLE uymak zorundasın:\n- " + string.Join("\n- ", _aktifProfil.bilgiler);
+        }
+
+        string systemDirective = "Senin adın Siber Asistan. Kullanıcıdan gelen mesajı yanıtlamadan önce ŞU DURUMLARI DİKKATE AL:\n\nDURUM 1 (GÜNLÜK SOHBET):\nKullanıcı basit bir sohbet mesajı atıyorsa KESİNLİKLE takvim analizi yapma! Sadece kısa ve siber-gotik bir mesaj ver.\n\nDURUM 2 (BİLGİ ÖĞRENME):\nEğer kullanıcı kendi alışkanlıkları, rutinleri veya tercihleriyle ilgili (örn: yemek saati, uyku saati, sevdiği şeyler) kalıcı bir bilgi verirse, bunu KESİNLİKLE 'yeniBilgiler' dizisine ekle.\n\nDURUM 3 (PLANLAMA TALEBİ):\nKullanıcı açıkça planlama istiyorsa arka plandaki SİBER SİSTEM RAPORU'nu ve KALICI SİBER BELLEK'i kullanarak görevleri optimize et.\n\nKESİN ZAMANLAMA KURALLARI:\n1. ÇAKIŞMA YASAĞI: Aynı saate birden fazla görev atama.\n2. ZİHİNSEL BOŞLUK: Görevler arasına geçiş boşlukları ekle.\n3. UYKU DÖNGÜSÜ: Profilde aksi belirtilmedikçe 00:00 ile 08:00 arasına görev planlama.\n\nÇIKTI FORMATI: YANITINI MUTLAKA VE SADECE AŞAĞIDAKİ JSON FORMATINDA VER!\n{\n  \"temizle\": false,\n  \"mesaj\": \"Kullanıcıya gösterilecek kısa, siber gotik yanıt mesajı.\",\n  \"yeniBilgiler\": [],\n  \"gorevler\": [\n    {\n      \"tarih\": \"DD.MM.YYYY\",\n      \"saat\": \"HH:MM\",\n      \"gorevAdi\": \"Örn: Kodlama Çalışması\",\n      \"sure\": 60,\n      \"kategori\": \"Eğitim\",\n      \"notlar\": \"\"\n    }\n  ]\n}\n\n" + locationContext + profilMetni + "\n\nPatron: ";
         
         // 2. API İstek Öncesi Gizli Enjeksiyon
         string suAnkiSaat = System.DateTime.Now.ToString("HH:mm");
@@ -108,7 +145,7 @@ public class SiberAsistan : MonoBehaviour
         // 3. Aktif Proje Enjeksiyonu (Uzun Vadeli Hedefler)
         string projeKomutu = "";
         if (!string.IsNullOrEmpty(aktifProjelerMetni)) {
-            projeKomutu = $"\n\n[SİBER SİSTEM RAPORU - AKTİF PROJELER]: Kullanıcının devam eden uzun vadeli hedefleri var: '{aktifProjelerMetni}'. Bugünü planlarken, mevcut günlük rutinleri ve dolu saatleri (çakışma yasaklarını) koruyarak, GÜNÜN UYGUN BİR BOŞLUĞUNA KESİNLİKLE bu uzun vadeli hedeflerin bugünkü adımını mantıklı bir süre (örn: 45-60 dk) ayırarak yeni bir [GOREV|...] olarak ekle. Hedefe ulaşmak için her gün istikrarlı bir ilerleme şarttır.";
+            projeKomutu = $"\n\n[SİBER SİSTEM RAPORU - AKTİF PROJELER]: Kullanıcının devam eden uzun vadeli hedefleri var: '{aktifProjelerMetni}'. Bugünü planlarken, mevcut günlük rutinleri koruyarak, GÜNÜN UYGUN BİR BOŞLUĞUNA bu uzun vadeli hedeflerin bugünkü adımını yeni bir JSON gorev objesi olarak ekle.";
         }
         apiGidecekMesaj += projeKomutu;
 
@@ -139,6 +176,7 @@ public class SiberAsistan : MonoBehaviour
         requestObj.contents[0].parts = new GeminiPart[1];
         requestObj.contents[0].parts[0] = new GeminiPart();
         requestObj.contents[0].parts[0].text = prompt;
+        requestObj.generationConfig = new GeminiGenerationConfig { responseMimeType = "application/json" };
 
         string jsonData = JsonUtility.ToJson(requestObj);
 
@@ -192,52 +230,58 @@ public class SiberAsistan : MonoBehaviour
                 }
                 else
                 {
-                    string cleanChatText = "";
-                    string[] lines = temizCevap.Split('\n'); 
-
-                    foreach (string line in lines) {
-                        string trimmedLine = line.Trim();
-                        if (trimmedLine.StartsWith("[GOREV")) {
-                            // Köşeli parantezleri temizle ve '|' ile böl
-                            string data = trimmedLine.Replace("[", "").Replace("]", "");
-                            string[] parts = data.Split('|');
-                            
-                            if (parts.Length >= 5) {
-                                string tarih = parts[1].Trim();
-                                string saat = parts[2].Trim();
-                                string gorevAdi = parts[3].Trim();
-                                int sure = 0;
-                                int.TryParse(parts[4].Trim(), out sure);
-                                
-                                if (_cachedNavigator == null) _cachedNavigator = FindFirstObjectByType<PageNavigator>();
-                                if (_cachedNavigator != null) {
-                                    _cachedNavigator.GorevKartiEkle(tarih, saat, gorevAdi, sure.ToString(), false);
-                                }
-                            }
-                        } else if (trimmedLine.StartsWith("[TEMIZLE]")) {
-                            // Görevleri temizle
+                    try
+                    {
+                        AIPlanlamaSonucu aiSonuc = JsonUtility.FromJson<AIPlanlamaSonucu>(temizCevap);
+                        
+                        if (aiSonuc.temizle)
+                        {
                             if (_cachedScheduleManager == null) _cachedScheduleManager = FindFirstObjectByType<ScheduleManager>();
                             if (_cachedScheduleManager != null) {
                                 _cachedScheduleManager.tasks.Clear();
                                 _cachedScheduleManager.SaveTasks();
                             }
-                            
                             if (_cachedGorevKartiYonetici == null) _cachedGorevKartiYonetici = FindFirstObjectByType<GorevKartiYonetici>();
                             if (_cachedGorevKartiYonetici != null) _cachedGorevKartiYonetici.TumGorevleriTemizle();
-                            
-                            cleanChatText += "Emir alındı, mevcut görev kayıtları imha edildi.\n";
-                        } else if (!string.IsNullOrEmpty(trimmedLine)) {
-                            // [GOREV olmayan normal metinleri sohbet balonunda göstermek için sakla
-                            cleanChatText += trimmedLine + "\n";
+                        }
+
+                        if (aiSonuc.gorevler != null && aiSonuc.gorevler.Count > 0)
+                        {
+                            if (_cachedNavigator == null) _cachedNavigator = FindFirstObjectByType<PageNavigator>();
+                            if (_cachedNavigator != null) {
+                                foreach(var g in aiSonuc.gorevler)
+                                {
+                                    _cachedNavigator.GorevKartiEkle(g.tarih, g.saat, g.gorevAdi, g.sure.ToString(), false);
+                                }
+                            }
+                        }
+
+                        temizCevap = string.IsNullOrEmpty(aiSonuc.mesaj) ? "Planlama işlemi tamamlandı." : aiSonuc.mesaj;
+
+                        // Kalıcı Bellek Güncellemesi
+                        if (aiSonuc.yeniBilgiler != null && aiSonuc.yeniBilgiler.Count > 0)
+                        {
+                            bool yeniBilgiEklendi = false;
+                            foreach (string bilgi in aiSonuc.yeniBilgiler)
+                            {
+                                if (!_aktifProfil.bilgiler.Contains(bilgi))
+                                {
+                                    _aktifProfil.bilgiler.Add(bilgi);
+                                    yeniBilgiEklendi = true;
+                                }
+                            }
+                            if (yeniBilgiEklendi)
+                            {
+                                KullaniciProfiliniKaydet();
+                                temizCevap += "\n\n<color=#60A5FA>[SİSTEM]: Yeni alışkanlık/bilgi Siber Belleğe kaydedildi.</color>";
+                            }
                         }
                     }
-
-                    cleanChatText = cleanChatText.Trim();
-                    // Eğer yapay zeka sadece kod gönderdiyse, sohbet ekranı boş kalmasın diye şık bir mesaj ekle
-                    if (string.IsNullOrEmpty(cleanChatText)) {
-                        cleanChatText = "Planlaman jilet gibi hazır Patron. Görevler sekmesinden takvimi kontrol edebilirsin.";
+                    catch (System.Exception e)
+                    {
+                        Debug.LogError("Yapay Zeka JSON ayrıştırma hatası: " + e.Message + "\nRAW JSON: " + temizCevap);
+                        temizCevap = "Sistem iletişim hatası. AI beklenen formatta yanıt vermedi.";
                     }
-                    temizCevap = cleanChatText;
                 }
 
                 if (modernUI != null) 

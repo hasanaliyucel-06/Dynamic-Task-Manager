@@ -143,7 +143,7 @@ public class TakvimYonetici : MonoBehaviour
             btnSil.style.borderBottomLeftRadius = 15; btnSil.style.borderBottomRightRadius = 15;
             btnSil.style.width = 30; btnSil.style.height = 30;
             btnSil.clicked += () => {
-                aktifHedefler.Remove(hedef);
+                aktifHedefler.RemoveAll(h => h.id == hedef.id);
                 HedefleriKaydet();
                 HedefListesiniRenderEt();
                 TakvimGuncelle();
@@ -162,9 +162,16 @@ public class TakvimYonetici : MonoBehaviour
         wrapper.hedefler = aktifHedefler;
         string json = JsonUtility.ToJson(wrapper, true);
         string path = Path.Combine(Application.persistentDataPath, "goals.json");
+        string tmpPath = path + ".tmp";
+        
         try
         {
-            File.WriteAllText(path, json);
+            File.WriteAllText(tmpPath, json);
+            if (File.Exists(tmpPath))
+            {
+                if (File.Exists(path)) File.Delete(path);
+                File.Move(tmpPath, path);
+            }
         }
         catch (System.Exception e)
         {

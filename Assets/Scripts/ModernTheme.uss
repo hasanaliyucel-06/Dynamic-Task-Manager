@@ -56,11 +56,44 @@ Label, TextElement {
     white-space: normal;
     overflow: visible;
 }
+
+/* Panel Backgrounds (Dynamic based on theme) */
+.panel-surface {
+    background-color: var(--surface-color);
+}
+
+.panel-surface-dark {
+    background-color: var(--surface-dark);
+}
+
+.modal-overlay {
+    background-color: rgba(0, 0, 0, 0.85);
+}
+
 .modern-kart {
     background-color: var(--bg-color);
     border-radius: 20px;
     padding: 20px;
     margin: 10px;
+}
+
+/* CSS Animations for Task Cards */
+.kart-animasyonlu {
+    transition-property: translate, opacity, background-color;
+    transition-duration: 0.3s;
+    transition-timing-function: ease-out;
+    translate: 0 0;
+    opacity: 1;
+}
+
+.kart-silindi {
+    translate: 100% 0;
+    opacity: 0;
+}
+
+.kart-tamamlandi {
+    translate: 20px 0;
+    background-color: var(--accent-color) !important;
 }
 
 .header-title {

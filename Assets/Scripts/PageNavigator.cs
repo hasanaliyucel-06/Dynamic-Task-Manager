@@ -270,11 +270,11 @@ public class PageNavigator : MonoBehaviour
     /// <summary>
     /// Proxy: Görev kartı ekleme isteğini GorevKartiYonetici'ye yönlendirir.
     /// </summary>
-    public void GorevKartiEkle(string tarih, string saat, string gorevAdi, string sure = "", bool katiMi = false, bool kaydet = true, bool isRepeating = false, bool isAlreadyCompleted = false, string kategori = "Genel", int oncelik = 1, string notlar = "")
+    public void GorevKartiEkle(string tarih, string saat, string gorevAdi, string sure = "", bool katiMi = false, bool kaydet = true, bool isRepeating = false, bool isAlreadyCompleted = false, string kategori = "Genel", int oncelik = 1, string notlar = "", string id = "")
     {
         if (gorevKartiYonetici != null)
         {
-            gorevKartiYonetici.GorevKartiEkle(tarih, saat, gorevAdi, sure, katiMi, kaydet, isRepeating, isAlreadyCompleted, kategori, oncelik, notlar);
+            gorevKartiYonetici.GorevKartiEkle(tarih, saat, gorevAdi, sure, katiMi, kaydet, isRepeating, isAlreadyCompleted, kategori, oncelik, notlar, id);
         }
     }
 

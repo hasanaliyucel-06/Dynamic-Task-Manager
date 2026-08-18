@@ -22,8 +22,11 @@ public class GorevData
     // Faz 2 Yeni Özellikleri
     public int oncelik; // 0: Düşük, 1: Orta, 2: Yüksek
     public string notlar;
+    
+    // Faz 5 Yeni Özellikleri (Benzersiz ID)
+    public string id;
 
-    public GorevData(string date, string time, string name, int duration, bool strictBlock, bool completed = false, bool repeating = false, string kat = "Genel", int hatirlatici = 15, int oncelikDegeri = 1, string notMetni = "")
+    public GorevData(string date, string time, string name, int duration, bool strictBlock, bool completed = false, bool repeating = false, string kat = "Genel", int hatirlatici = 15, int oncelikDegeri = 1, string notMetni = "", string gorevId = "")
     {
         taskDate = date;
         taskTime = time;
@@ -36,6 +39,7 @@ public class GorevData
         hatirlaticiDakikaOnce = hatirlatici;
         oncelik = oncelikDegeri;
         notlar = notMetni;
+        id = string.IsNullOrEmpty(gorevId) ? System.Guid.NewGuid().ToString() : gorevId;
     }
 }
 
@@ -50,9 +54,15 @@ public class TaskWrapper
 [System.Serializable]
 public class UzunVadeliHedef
 {
+    public string id;
     public string hedefAdi;
     public int kalanGun;
     public string baslangicTarihi;
+
+    public UzunVadeliHedef()
+    {
+        id = System.Guid.NewGuid().ToString();
+    }
 }
 
 [System.Serializable]
@@ -104,4 +114,39 @@ public class GeminiPart
 public class GeminiRequest
 {
     public GeminiContent[] contents;
+    public GeminiGenerationConfig generationConfig;
+}
+
+[System.Serializable]
+public class GeminiGenerationConfig
+{
+    public string responseMimeType;
+}
+
+// ── AI Structured Output Modelleri ─────────────────────
+[System.Serializable]
+public class AIGorev
+{
+    public string tarih;
+    public string saat;
+    public string gorevAdi;
+    public int sure;
+    public string kategori;
+    public string notlar;
+}
+
+[System.Serializable]
+public class AIPlanlamaSonucu
+{
+    public bool temizle;
+    public string mesaj;
+    public List<string> yeniBilgiler;
+    public List<AIGorev> gorevler;
+}
+
+// ── Kullanıcı Profili (Kalıcı Bellek) ──────────────────
+[System.Serializable]
+public class KullaniciProfili
+{
+    public List<string> bilgiler = new List<string>();
 }

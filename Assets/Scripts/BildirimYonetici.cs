@@ -87,7 +87,7 @@ public class BildirimYonetici : MonoBehaviour
                     if (simdi >= bildirimSaati && simdi <= bildirimSaati.AddMinutes(1))
                     {
                         // Zaten bildirim gösterildiyse tekrar etme
-                        string gorevKey = gorev.taskName + "_" + gorev.taskDate + "_" + gorev.taskTime;
+                        string gorevKey = gorev.id;
                         if (!bildirilenGorevler.Contains(gorevKey))
                         {
                             bildirilenGorevler.Add(gorevKey);
