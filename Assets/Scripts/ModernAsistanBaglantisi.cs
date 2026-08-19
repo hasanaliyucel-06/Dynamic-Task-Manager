@@ -17,6 +17,7 @@ public class ModernAsistanBaglantisi : MonoBehaviour
     private VisualElement inputContainer;
     private VisualElement emptySohbet;
     private TextField inputSohbetArama;
+    private EventCallback<ChangeEvent<string>> _aramaCallback;
 
     public SiberAsistan siberAsistan; 
 
@@ -32,7 +33,9 @@ public class ModernAsistanBaglantisi : MonoBehaviour
         gonderButonu = root.Q<Button>("btnGonder");
         mesajGirdisi = root.Q<TextField>("txtMesaj");
         scrollSohbet = root.Q<ScrollView>("scrollSohbet");
-        lblStatus = root.Q<Label>(className: "header-status");
+        // BUG 3 FIX: Sohbet sayfası kapsamında arama yaparak diğer sayfalardaki aynı class'lı label'larla çakışmayı önle
+        var pageSohbet = root.Q<VisualElement>("Page_Sohbet");
+        lblStatus = pageSohbet?.Q<Label>(className: "header-status");
         inputContainer = root.Q<VisualElement>(className: "bottom-bar");
         emptySohbet = root.Q<VisualElement>("emptySohbet");
 
@@ -45,9 +48,13 @@ public class ModernAsistanBaglantisi : MonoBehaviour
         inputSohbetArama = root.Q<TextField>("inputSohbetArama");
         if (inputSohbetArama != null)
         {
-            inputSohbetArama.RegisterValueChangedCallback(evt => {
-                SohbetiFiltrele(evt.newValue);
-            });
+            // BUG 7 FIX: Önceki callback'i temizle, yeni ekle (çoğalma önleme)
+            if (_aramaCallback != null)
+            {
+                inputSohbetArama.UnregisterValueChangedCallback(_aramaCallback);
+            }
+            _aramaCallback = evt => SohbetiFiltrele(evt.newValue);
+            inputSohbetArama.RegisterValueChangedCallback(_aramaCallback);
         }
 
         SohbetGecmisiniYukle();

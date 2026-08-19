@@ -18,6 +18,10 @@ public class TakvimYonetici : MonoBehaviour
     private VisualElement takvimGunler;
     private Label lblTakvimAyYil;
     private ScrollView aktifHedeflerListesi;
+    
+    // BUG 6 FIX: Buton referansları field-level'da (named handler'lar erişebilsin)
+    private Button btnTakvimOnceki;
+    private Button btnTakvimSonraki;
 
     // SihirbazYonetici'nin tarih aralığına erişimi için property'ler
     public System.DateTime? SecilenBaslangic { get { return secilenBaslangic; } set { secilenBaslangic = value; } }
@@ -34,25 +38,35 @@ public class TakvimYonetici : MonoBehaviour
         takvimGunler = root.Q<VisualElement>("takvimGunleriWrap");
         lblTakvimAyYil = root.Q<Label>("lblTakvimAyYil");
         aktifHedeflerListesi = root.Q<ScrollView>("aktifHedeflerListesi");
-        Button btnTakvimOnceki = root.Q<Button>("btnTakvimOnceki");
-        Button btnTakvimSonraki = root.Q<Button>("btnTakvimSonraki");
+        btnTakvimOnceki = root.Q<Button>("btnTakvimOnceki");
+        btnTakvimSonraki = root.Q<Button>("btnTakvimSonraki");
 
+        // BUG 6 FIX: Named handler pattern — -= / += ile event sızıntısı önleme
         if (btnTakvimOnceki != null)
         {
-            btnTakvimOnceki.clicked += () => {
-                gosterilenAy = gosterilenAy.AddMonths(-1);
-                TakvimGuncelle();
-            };
+            btnTakvimOnceki.clicked -= OnTakvimOncekiClicked;
+            btnTakvimOnceki.clicked += OnTakvimOncekiClicked;
         }
         if (btnTakvimSonraki != null)
         {
-            btnTakvimSonraki.clicked += () => {
-                gosterilenAy = gosterilenAy.AddMonths(1);
-                TakvimGuncelle();
-            };
+            btnTakvimSonraki.clicked -= OnTakvimSonrakiClicked;
+            btnTakvimSonraki.clicked += OnTakvimSonrakiClicked;
         }
 
         HedefleriYukle();
+        TakvimGuncelle();
+    }
+
+    // BUG 6 FIX: Named event handler metotları
+    private void OnTakvimOncekiClicked()
+    {
+        gosterilenAy = gosterilenAy.AddMonths(-1);
+        TakvimGuncelle();
+    }
+
+    private void OnTakvimSonrakiClicked()
+    {
+        gosterilenAy = gosterilenAy.AddMonths(1);
         TakvimGuncelle();
     }
 

@@ -221,7 +221,7 @@
     </ui:VisualElement>
 
     <!-- Bildirim Banner -->
-    <ui:VisualElement name="bildirimBanner" style="position: absolute; top: -300px; left: 10%; right: 10%; background-color: #EF4444; border-radius: 12px; padding: 15px; flex-direction: column; align-items: center; justify-content: center;">
+    <ui:VisualElement name="bildirimBanner" style="position: absolute; top: -300px; left: 10%; right: 10%; background-color: #EF4444; border-radius: 12px; padding: 15px; flex-direction: column; align-items: center; justify-content: center; transition-property: top; transition-duration: 0.4s; transition-timing-function: ease-out;">
         <ui:Label text="⏰ ZAMAN GELDİ!" style="color: white; -unity-font-style: bold; font-size: 16px; margin-bottom: 5px;" />
         <ui:Label name="lblBildirimMetni" text="Sıradaki Görev: Kitap Okuma" style="color: white; font-size: 14px; margin-bottom: 10px; -unity-text-align: middle-center; white-space: normal;" />
         <ui:VisualElement style="flex-direction: row; justify-content: space-around; width: 100%;">

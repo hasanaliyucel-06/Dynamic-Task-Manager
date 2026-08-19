@@ -94,9 +94,27 @@ public class SesYonetici : MonoBehaviour
     {
         if (isMuted) return; // Mute iken titreşimi de kapatıyoruz.
         
-        // Sadece mobil cihazlarda titreşimi çalıştırır
-        #if UNITY_ANDROID || UNITY_IOS
-            Handheld.Vibrate();
-        #endif
+#if UNITY_ANDROID && !UNITY_EDITOR
+        try
+        {
+            using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+            using (var activity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity"))
+            using (var vibrator = activity.Call<AndroidJavaObject>("getSystemService", "vibrator"))
+            {
+                if (vibrator != null)
+                {
+                    long duration = heavy ? 200L : 50L;
+                    vibrator.Call("vibrate", duration);
+                }
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning("[SesYonetici] Titreşim hatası: " + e.Message);
+            Handheld.Vibrate(); // Fallback
+        }
+#elif UNITY_IOS && !UNITY_EDITOR
+        Handheld.Vibrate();
+#endif
     }
 }

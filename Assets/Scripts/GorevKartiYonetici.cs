@@ -75,9 +75,9 @@ public class GorevKartiYonetici : MonoBehaviour
         btnDuzenleOncelikOrta = root.Q<Button>("btnDuzenleOncelikOrta");
         btnDuzenleOncelikYuksek = root.Q<Button>("btnDuzenleOncelikYuksek");
 
-        if (btnDuzenleOncelikDusuk != null) btnDuzenleOncelikDusuk.clicked += () => OncelikSec(0, true);
-        if (btnDuzenleOncelikOrta != null) btnDuzenleOncelikOrta.clicked += () => OncelikSec(1, true);
-        if (btnDuzenleOncelikYuksek != null) btnDuzenleOncelikYuksek.clicked += () => OncelikSec(2, true);
+        if (btnDuzenleOncelikDusuk != null) { btnDuzenleOncelikDusuk.clicked -= OnDuzenleOncelikDusukClicked; btnDuzenleOncelikDusuk.clicked += OnDuzenleOncelikDusukClicked; }
+        if (btnDuzenleOncelikOrta != null) { btnDuzenleOncelikOrta.clicked -= OnDuzenleOncelikOrtaClicked; btnDuzenleOncelikOrta.clicked += OnDuzenleOncelikOrtaClicked; }
+        if (btnDuzenleOncelikYuksek != null) { btnDuzenleOncelikYuksek.clicked -= OnDuzenleOncelikYuksekClicked; btnDuzenleOncelikYuksek.clicked += OnDuzenleOncelikYuksekClicked; }
 
         // Geçmiş Görevler
         gecmisGorevlerOverlay = root.Q<VisualElement>("gecmisGorevlerOverlay");
@@ -85,8 +85,8 @@ public class GorevKartiYonetici : MonoBehaviour
         btnGecmisKapat = root.Q<Button>("btnGecmisKapat");
         btnGecmisGorevler = root.Q<Button>("Btn_GecmisGorevler");
 
-        if (btnGecmisGorevler != null) btnGecmisGorevler.clicked += GecmisGorevleriGoster;
-        if (btnGecmisKapat != null) btnGecmisKapat.clicked += () => { if (gecmisGorevlerOverlay != null) gecmisGorevlerOverlay.style.display = DisplayStyle.None; };
+        if (btnGecmisGorevler != null) { btnGecmisGorevler.clicked -= GecmisGorevleriGoster; btnGecmisGorevler.clicked += GecmisGorevleriGoster; }
+        if (btnGecmisKapat != null) { btnGecmisKapat.clicked -= OnGecmisKapatClicked; btnGecmisKapat.clicked += OnGecmisKapatClicked; }
 
         // Silme onay overlay referansları
         silmeOnayOverlay = root.Q<VisualElement>("silmeOnayOverlay");
@@ -142,6 +142,11 @@ public class GorevKartiYonetici : MonoBehaviour
     private void SilmeOnayEvetClicked() { onSilmeOnaylandi?.Invoke(); if (silmeOnayOverlay != null) silmeOnayOverlay.style.display = DisplayStyle.None; }
     private void SilmeOnayHayirClicked() { if (silmeOnayOverlay != null) silmeOnayOverlay.style.display = DisplayStyle.None; }
     private void UndoClicked() { onUndoAction?.Invoke(); UndoToastGizle(); }
+    // BUG 4 FIX: Named handler'lar (lambda sızıntısını önler)
+    private void OnDuzenleOncelikDusukClicked() => OncelikSec(0, true);
+    private void OnDuzenleOncelikOrtaClicked() => OncelikSec(1, true);
+    private void OnDuzenleOncelikYuksekClicked() => OncelikSec(2, true);
+    private void OnGecmisKapatClicked() { if (gecmisGorevlerOverlay != null) gecmisGorevlerOverlay.style.display = DisplayStyle.None; }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // ANİMASYON SİSTEMİ
@@ -807,7 +812,13 @@ public class GorevKartiYonetici : MonoBehaviour
         if (sManager != null)
         {
             string bugun = System.DateTime.Now.ToString("dd.MM.yyyy");
-            var gecmisList = sManager.tasks.Where(t => t.taskDate != bugun).OrderByDescending(t => t.taskDate).ToList();
+            // BUG 9 FIX: DateTime parse ile doğru kronolojik sıralama (string sıralaması dd.MM.yyyy formatında yanlış sonuç verir)
+            var gecmisList = sManager.tasks.Where(t => t.taskDate != bugun).OrderByDescending(t => {
+                System.DateTime dt;
+                if (System.DateTime.TryParseExact(t.taskDate, "dd.MM.yyyy", null, System.Globalization.DateTimeStyles.None, out dt))
+                    return dt;
+                return System.DateTime.MinValue;
+            }).ToList();
             
             if (gecmisList.Count == 0)
             {

@@ -100,34 +100,44 @@ public class PageNavigator : MonoBehaviour
         KontrolGunlukOzet(root);
     }
 
+    // BUG 11 FIX: Onboarding overlay referansı (named handler erişimi için)
+    private VisualElement onboardingOverlay;
+
     private void KontrolOnboarding(VisualElement root)
     {
         if (PlayerPrefs.GetInt("OnboardingDone", 0) == 0)
         {
-            var overlay = root.Q<VisualElement>("onboardingOverlay");
-            if (overlay != null) overlay.style.display = DisplayStyle.Flex;
+            onboardingOverlay = root.Q<VisualElement>("onboardingOverlay");
+            if (onboardingOverlay != null) onboardingOverlay.style.display = DisplayStyle.Flex;
 
             var btnIleri = root.Q<Button>("btnOnboardingIleri");
             if (btnIleri != null)
             {
-                btnIleri.clicked += () => {
-                    if (overlay != null) overlay.style.display = DisplayStyle.None;
-                    PlayerPrefs.SetInt("OnboardingDone", 1);
-                    PlayerPrefs.Save();
-                };
+                btnIleri.clicked -= OnOnboardingIleriClicked;
+                btnIleri.clicked += OnOnboardingIleriClicked;
             }
         }
     }
+
+    private void OnOnboardingIleriClicked()
+    {
+        if (onboardingOverlay != null) onboardingOverlay.style.display = DisplayStyle.None;
+        PlayerPrefs.SetInt("OnboardingDone", 1);
+        PlayerPrefs.Save();
+    }
+
+    // Günlük özet overlay referansı (named handler erişimi için)
+    private VisualElement gunlukOzetOverlay;
 
     private void KontrolGunlukOzet(VisualElement root)
     {
         string bugun = System.DateTime.Now.ToString("dd.MM.yyyy");
         if (System.DateTime.Now.Hour >= 20 && PlayerPrefs.GetString("SonOzetTarihi", "") != bugun)
         {
-            var overlay = root.Q<VisualElement>("gunlukOzetOverlay");
-            if (overlay != null)
+            gunlukOzetOverlay = root.Q<VisualElement>("gunlukOzetOverlay");
+            if (gunlukOzetOverlay != null)
             {
-                overlay.style.display = DisplayStyle.Flex;
+                gunlukOzetOverlay.style.display = DisplayStyle.Flex;
                 PlayerPrefs.SetString("SonOzetTarihi", bugun);
                 PlayerPrefs.Save();
                 
@@ -142,12 +152,16 @@ public class PageNavigator : MonoBehaviour
                 var btnKapat = root.Q<Button>("btnOzetKapat");
                 if (btnKapat != null)
                 {
-                    btnKapat.clicked += () => {
-                        if (overlay != null) overlay.style.display = DisplayStyle.None;
-                    };
+                    btnKapat.clicked -= OnGunlukOzetKapatClicked;
+                    btnKapat.clicked += OnGunlukOzetKapatClicked;
                 }
             }
         }
+    }
+
+    private void OnGunlukOzetKapatClicked()
+    {
+        if (gunlukOzetOverlay != null) gunlukOzetOverlay.style.display = DisplayStyle.None;
     }
 
     void OnDisable()

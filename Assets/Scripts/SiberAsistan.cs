@@ -158,7 +158,7 @@ public class SiberAsistan : MonoBehaviour
         if (config == null) config = Resources.Load<AsistanConfig>("SiberAsistanConfig");
         
         string cleanKey = config != null ? config.apiKey.Trim() : "";
-        string cleanModelName = config != null ? config.modelName.Trim() : "gemini-1.5-pro";
+        string cleanModelName = config != null ? config.modelName.Trim() : "gemini-3.1-flash-lite";
 
         if (string.IsNullOrEmpty(cleanKey))
         {
