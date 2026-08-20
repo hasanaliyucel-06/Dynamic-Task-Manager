@@ -45,34 +45,36 @@
             </ui:VisualElement>
         </ui:VisualElement>
         <ui:VisualElement name="pageDisiplin" class="page" style="display: none;">
-            <ui:VisualElement class="top-bar" style="flex-direction: column; align-items: stretch; padding-top: 40px; padding-bottom: 10px;">
+            <ui:VisualElement class="top-bar" style="flex-direction: column; align-items: stretch; padding-top: 40px; padding-bottom: 10px; flex-shrink: 0;">
                 <ui:Label text="AKILLI HEDEFLER VE TAKVİM" style="color: white; -unity-font-style: bold; font-size: 20px; -unity-text-align: middle-center; margin-bottom: 10px;"/>
             </ui:VisualElement>
-            <!-- Akıllı Hedef Paneli -->
-            <ui:VisualElement class="panel-surface" style="border-radius: 12px; padding: 10px; margin-top: 5px; margin-right: 15px; margin-bottom: 5px; margin-left: 15px; flex-direction: column;">
-                <ui:TextField name="inputHedef" placeholder-text="Hedefin nedir? (Örn: Suç ve Ceza'yı bitir)" class="premium-input" style="width: 100%; margin-bottom: 0;" />
-                <ui:VisualElement name="sabitTakvimContainer" class="panel-surface-dark" style="border-radius: 12px; padding: 10px; margin-top: 15px; margin-bottom: 10px; flex-direction: column;">
-                    <ui:VisualElement style="flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <ui:Button name="btnTakvimOnceki" text="&lt;" style="background-color: transparent; color: white; border-width: 0; font-size: 16px; -unity-font-style: bold; padding: 5px;" />
-                        <ui:Label name="lblTakvimAyYil" text="Ay Yıl" style="color: white; -unity-font-style: bold; font-size: 16px; -unity-text-align: middle-center;" />
-                        <ui:Button name="btnTakvimSonraki" text="&gt;" style="background-color: transparent; color: white; border-width: 0; font-size: 16px; -unity-font-style: bold; padding: 5px;" />
+            <ui:ScrollView style="flex-grow: 1; flex-shrink: 1;">
+                <!-- Akıllı Hedef Paneli -->
+                <ui:VisualElement class="panel-surface" style="border-radius: 12px; padding: 10px; margin-top: 5px; margin-right: 15px; margin-bottom: 5px; margin-left: 15px; flex-direction: column;">
+                    <ui:TextField name="inputHedef" placeholder-text="Hedefin nedir? (Örn: Suç ve Ceza'yı bitir)" class="premium-input" style="width: 100%; margin-bottom: 0;" />
+                    <ui:VisualElement name="sabitTakvimContainer" class="panel-surface-dark" style="border-radius: 12px; padding: 10px; margin-top: 15px; margin-bottom: 10px; flex-direction: column;">
+                        <ui:VisualElement style="flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <ui:Button name="btnTakvimOnceki" text="&lt;" style="background-color: transparent; color: white; border-width: 0; font-size: 16px; -unity-font-style: bold; padding: 5px;" />
+                            <ui:Label name="lblTakvimAyYil" text="Ay Yıl" style="color: white; -unity-font-style: bold; font-size: 16px; -unity-text-align: middle-center;" />
+                            <ui:Button name="btnTakvimSonraki" text="&gt;" style="background-color: transparent; color: white; border-width: 0; font-size: 16px; -unity-font-style: bold; padding: 5px;" />
+                        </ui:VisualElement>
+                        <ui:VisualElement style="flex-direction: row; justify-content: space-around; margin-bottom: 5px;">
+                            <ui:Label text="Pzt" style="color: #9CA3AF; font-size: 12px; flex-grow: 1; -unity-text-align: middle-center; padding: 0;" />
+                            <ui:Label text="Sal" style="color: #9CA3AF; font-size: 12px; flex-grow: 1; -unity-text-align: middle-center; padding: 0;" />
+                            <ui:Label text="Çar" style="color: #9CA3AF; font-size: 12px; flex-grow: 1; -unity-text-align: middle-center; padding: 0;" />
+                            <ui:Label text="Per" style="color: #9CA3AF; font-size: 12px; flex-grow: 1; -unity-text-align: middle-center; padding: 0;" />
+                            <ui:Label text="Cum" style="color: #9CA3AF; font-size: 12px; flex-grow: 1; -unity-text-align: middle-center; padding: 0;" />
+                            <ui:Label text="Cmt" style="color: #9CA3AF; font-size: 12px; flex-grow: 1; -unity-text-align: middle-center; padding: 0;" />
+                            <ui:Label text="Paz" style="color: #9CA3AF; font-size: 12px; flex-grow: 1; -unity-text-align: middle-center; padding: 0;" />
+                        </ui:VisualElement>
+                        <ui:VisualElement name="takvimGunleriWrap" style="flex-direction: row; flex-wrap: wrap; justify-content: flex-start;" />
                     </ui:VisualElement>
-                    <ui:VisualElement style="flex-direction: row; justify-content: space-between; margin-bottom: 5px;">
-                        <ui:Label text="Pzt" style="color: #9CA3AF; font-size: 12px; width: 35px; -unity-text-align: middle-center; padding: 0;" />
-                        <ui:Label text="Sal" style="color: #9CA3AF; font-size: 12px; width: 35px; -unity-text-align: middle-center; padding: 0;" />
-                        <ui:Label text="Çar" style="color: #9CA3AF; font-size: 12px; width: 35px; -unity-text-align: middle-center; padding: 0;" />
-                        <ui:Label text="Per" style="color: #9CA3AF; font-size: 12px; width: 35px; -unity-text-align: middle-center; padding: 0;" />
-                        <ui:Label text="Cum" style="color: #9CA3AF; font-size: 12px; width: 35px; -unity-text-align: middle-center; padding: 0;" />
-                        <ui:Label text="Cmt" style="color: #9CA3AF; font-size: 12px; width: 35px; -unity-text-align: middle-center; padding: 0;" />
-                        <ui:Label text="Paz" style="color: #9CA3AF; font-size: 12px; width: 35px; -unity-text-align: middle-center; padding: 0;" />
-                    </ui:VisualElement>
-                    <ui:VisualElement name="takvimGunleriWrap" style="flex-direction: row; flex-wrap: wrap; justify-content: flex-start;" />
+                    <ui:Button name="btnAiPlanla" text="YAPAY ZEKAYA PLANLAT" class="premium-buton" style="width: 100%; padding: 10px; -unity-font-style: bold; -unity-text-align: middle-center; background-color: #005BB5; border-radius: 8px;" />
                 </ui:VisualElement>
-                <ui:Button name="btnAiPlanla" text="YAPAY ZEKAYA PLANLAT" class="premium-buton" style="width: 100%; padding: 10px; -unity-font-style: bold; -unity-text-align: middle-center; background-color: #005BB5; border-radius: 8px;" />
-            </ui:VisualElement>
-            <!-- Aktif Hedefler Listesi -->
-            <ui:Label text="AKTİF HEDEFLER" style="color: #60A5FA; -unity-font-style: bold; font-size: 14px; margin-left: 15px; margin-top: 15px; margin-bottom: 5px;" />
-            <ui:ScrollView name="aktifHedeflerListesi" style="flex-grow: 1; padding: 0 15px; margin-bottom: 10px;" />
+                <!-- Aktif Hedefler Listesi -->
+                <ui:Label text="AKTİF HEDEFLER" style="color: #60A5FA; -unity-font-style: bold; font-size: 14px; margin-left: 15px; margin-top: 15px; margin-bottom: 5px;" />
+                <ui:ScrollView name="aktifHedeflerListesi" style="padding: 0 15px; margin-bottom: 10px;" />
+            </ui:ScrollView>
         </ui:VisualElement>
         <ui:VisualElement name="pageSistem" class="page" style="display: none;">
             <ui:VisualElement class="top-bar">

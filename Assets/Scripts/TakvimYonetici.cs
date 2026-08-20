@@ -210,10 +210,8 @@ public class TakvimYonetici : MonoBehaviour
         for (int b = 0; b < boslukSayisi; b++)
         {
             VisualElement bosluk = new VisualElement();
-            bosluk.style.width = 35;
+            bosluk.style.width = new Length(14.28f, LengthUnit.Percent);
             bosluk.style.height = 35;
-            bosluk.style.marginRight = 2;
-            bosluk.style.marginBottom = 2;
             takvimGunler.Add(bosluk);
         }
 
@@ -224,10 +222,8 @@ public class TakvimYonetici : MonoBehaviour
 
             Button gunBtn = new Button();
             gunBtn.text = g.ToString();
-            gunBtn.style.width = 35;
+            gunBtn.style.width = new Length(14.28f, LengthUnit.Percent);
             gunBtn.style.height = 35;
-            gunBtn.style.marginRight = 2;
-            gunBtn.style.marginBottom = 2;
             gunBtn.style.borderTopWidth = 0;
             gunBtn.style.borderBottomWidth = 0;
             gunBtn.style.borderLeftWidth = 0;
@@ -236,6 +232,10 @@ public class TakvimYonetici : MonoBehaviour
             gunBtn.style.paddingRight = 0;
             gunBtn.style.paddingTop = 0;
             gunBtn.style.paddingBottom = 0;
+            gunBtn.style.marginLeft = 0;
+            gunBtn.style.marginRight = 0;
+            gunBtn.style.marginTop = 0;
+            gunBtn.style.marginBottom = 2;
 
             // Varsayılan Stil
             gunBtn.style.backgroundColor = new StyleColor(new Color(0.2f, 0.2f, 0.2f));
