@@ -13,3 +13,9 @@ Assets/_Recovery/
 # Siber Asistan API Key Koruması
 Assets/Resources/SiberAsistanConfig.asset
 Assets/Resources/SiberAsistanConfig.asset.meta
+
+# Build artifacts
+/.utmp/
+/*.apk
+/*_BackUpThisFolder_ButDontShipItWithYourGame/
+/*_BurstDebugInformation_DoNotShip/

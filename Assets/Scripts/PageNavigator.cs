@@ -42,10 +42,16 @@ public class PageNavigator : MonoBehaviour
 
         // Safe Area Desteği (Çentik/Notch Padding)
         var mainContainer = root.Q<VisualElement>(className: "main-container");
-        if (mainContainer != null)
+        if (mainContainer != null && root.panel != null)
         {
-            float topPadding = Screen.height - Screen.safeArea.yMax;
-            float bottomPadding = Screen.safeArea.yMin;
+            Vector2 screenTop = RuntimePanelUtils.ScreenToPanel(root.panel, new Vector2(0, Screen.height));
+            Vector2 safeAreaTop = RuntimePanelUtils.ScreenToPanel(root.panel, new Vector2(0, Screen.safeArea.yMax));
+            Vector2 screenBottom = RuntimePanelUtils.ScreenToPanel(root.panel, new Vector2(0, 0));
+            Vector2 safeAreaBottom = RuntimePanelUtils.ScreenToPanel(root.panel, new Vector2(0, Screen.safeArea.yMin));
+
+            float topPadding = Mathf.Abs(screenTop.y - safeAreaTop.y);
+            float bottomPadding = Mathf.Abs(screenBottom.y - safeAreaBottom.y);
+
             if (topPadding > 0) mainContainer.style.paddingTop = topPadding;
             if (bottomPadding > 0) mainContainer.style.paddingBottom = bottomPadding;
         }
