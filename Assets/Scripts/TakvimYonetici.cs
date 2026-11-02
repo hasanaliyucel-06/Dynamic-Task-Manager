@@ -102,6 +102,18 @@ public class TakvimYonetici : MonoBehaviour
             if (wrapper != null && wrapper.hedefler != null)
             {
                 aktifHedefler = wrapper.hedefler;
+
+                // Hata 9 FIX: Eski kayıtlarda ID'si boş olan hedeflere benzersiz GUID ata (toplu silinme önleme)
+                bool idAtandi = false;
+                foreach (var h in aktifHedefler)
+                {
+                    if (string.IsNullOrEmpty(h.id))
+                    {
+                        h.id = System.Guid.NewGuid().ToString();
+                        idAtandi = true;
+                    }
+                }
+                if (idAtandi) HedefleriKaydet();
             }
         }
         HedefListesiniRenderEt();
@@ -200,7 +212,8 @@ public class TakvimYonetici : MonoBehaviour
     {
         if (takvimGunler == null) return;
         takvimGunler.Clear();
-        if (lblTakvimAyYil != null) lblTakvimAyYil.text = gosterilenAy.ToString("MMMM yyyy");
+        // Hata 6 FIX: Cihaz dili İngilizce/farklı olsa bile ay başlığını Türkçe sütunlarla uyumlu tut
+        if (lblTakvimAyYil != null) lblTakvimAyYil.text = gosterilenAy.ToString("MMMM yyyy", new System.Globalization.CultureInfo("tr-TR"));
 
         int gunSayisi = System.DateTime.DaysInMonth(gosterilenAy.Year, gosterilenAy.Month);
 

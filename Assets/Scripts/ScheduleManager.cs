@@ -279,8 +279,8 @@ public class ScheduleManager : MonoBehaviour
                 {
                     if (t.isRepeating && t.taskDate != bugunTarih)
                     {
-                        // Bugün aynı isimde görev var mı kontrol et
-                        bool bugunVarMi = this.tasks.Exists(x => x.taskDate == bugunTarih && x.taskName == t.taskName);
+                        // Bugün veya eklenecekler listesinde aynı isimde görev var mı kontrol et (üstel çoğalma önleme)
+                        bool bugunVarMi = this.tasks.Exists(x => x.taskDate == bugunTarih && x.taskName == t.taskName) || eklenecekler.Exists(x => x.taskName == t.taskName);
                         if (!bugunVarMi)
                         {
                             eklenecekler.Add(new GorevData(bugunTarih, t.taskTime, t.taskName, t.durationMinutes, t.isStrictBlock, false, true, t.kategori, t.hatirlaticiDakikaOnce, t.oncelik, t.notlar));

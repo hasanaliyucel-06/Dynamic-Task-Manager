@@ -251,7 +251,10 @@ public class SiberAsistan : MonoBehaviour
                             if (_cachedNavigator != null) {
                                 foreach(var g in aiSonuc.gorevler)
                                 {
-                                    _cachedNavigator.GorevKartiEkle(g.tarih, g.saat, g.gorevAdi, g.sure.ToString(), false);
+                                    // Hata 3 FIX: AI tarafından üretilen kategori ve notları da karta aktar
+                                    string kat = string.IsNullOrEmpty(g.kategori) ? "Genel" : g.kategori;
+                                    string not = string.IsNullOrEmpty(g.notlar) ? "" : g.notlar;
+                                    _cachedNavigator.GorevKartiEkle(g.tarih, g.saat, g.gorevAdi, g.sure.ToString(), false, true, false, false, kat, 1, not);
                                 }
                             }
                         }
@@ -354,7 +357,12 @@ public class SiberAsistan : MonoBehaviour
             if (response != null && response.candidates != null && response.candidates.Length > 0) {
                 var content = response.candidates[0].content;
                 if (content != null && content.parts != null && content.parts.Length > 0) {
-                    return content.parts[0].text.Trim();
+                    string txt = content.parts[0].text.Trim();
+                    // Hata 4 FIX: Markdown code fences (```json ... ```) temizliği
+                    if (txt.StartsWith("```json")) txt = txt.Substring(7);
+                    else if (txt.StartsWith("```")) txt = txt.Substring(3);
+                    if (txt.EndsWith("```")) txt = txt.Substring(0, txt.Length - 3);
+                    return txt.Trim();
                 }
             }
         } catch (System.Exception e) {

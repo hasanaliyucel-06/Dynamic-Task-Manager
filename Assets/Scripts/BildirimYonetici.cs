@@ -40,6 +40,12 @@ public class BildirimYonetici : MonoBehaviour
         InvokeRepeating("BildirimKontrol", 2f, 10f);
 
 #if UNITY_ANDROID
+        // Hata 8 FIX: Android 13+ (API 33+) bildirim izni kontrolü ve talebi
+        if (!UnityEngine.Android.Permission.HasUserAuthorizedPermission("android.permission.POST_NOTIFICATIONS"))
+        {
+            UnityEngine.Android.Permission.RequestUserPermission("android.permission.POST_NOTIFICATIONS");
+        }
+
         var channel = new AndroidNotificationChannel()
         {
             Id = "asistan_kanal",
@@ -71,7 +77,10 @@ public class BildirimYonetici : MonoBehaviour
         DateTime simdi = DateTime.Now;
         string bugun = simdi.ToString("dd.MM.yyyy");
 
-        foreach (var gorev in scheduleManager.tasks)
+        // Hata 1 FIX: Koleksiyon döngü sırasında değişirse crash olmaması için snapshot ToArray al
+        var gorevListesi = scheduleManager.tasks != null ? scheduleManager.tasks.ToArray() : System.Array.Empty<GorevData>();
+
+        foreach (var gorev in gorevListesi)
         {
             if (!gorev.isCompleted && gorev.taskDate == bugun)
             {
@@ -83,15 +92,18 @@ public class BildirimYonetici : MonoBehaviour
                     // Hatırlatıcı dakikasını çıkar
                     DateTime bildirimSaati = gercekGorevSaati.AddMinutes(-gorev.hatirlaticiDakikaOnce);
 
-                    // Eğer şu anki zaman, bildirim saatine eşit veya onu geçmişse (en fazla 1 dakika geçmişse)
-                    if (simdi >= bildirimSaati && simdi <= bildirimSaati.AddMinutes(1))
+                    // Hata 2 FIX: Telefon kilitliyken 1 dakikalık dar pencerenin kaçmasını önle
+                    DateTime sonBildirimZamani = gercekGorevSaati.AddMinutes(Math.Max(5, gorev.durationMinutes));
+                    if (simdi >= bildirimSaati && simdi <= sonBildirimZamani)
                     {
                         // Zaten bildirim gösterildiyse tekrar etme
                         string gorevKey = gorev.id;
                         if (!bildirilenGorevler.Contains(gorevKey))
                         {
                             bildirilenGorevler.Add(gorevKey);
-                            string mesaj = $"Sıradaki Görev ({gorev.hatirlaticiDakikaOnce} dk kaldı):\n{gorev.taskName}";
+                            string mesaj = simdi < gercekGorevSaati
+                                ? $"Sıradaki Görev ({gorev.hatirlaticiDakikaOnce} dk kaldı):\n{gorev.taskName}"
+                                : $"Görev Vakti Geldi:\n{gorev.taskName}";
                             GosterBildirim(mesaj);
                         }
                     }

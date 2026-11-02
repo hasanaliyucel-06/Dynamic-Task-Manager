@@ -77,6 +77,8 @@ public class SistemYonetici : MonoBehaviour
         if (toggleSesKapat != null)
         {
             toggleSesKapat.value = PlayerPrefs.GetInt("IsMuted", 0) == 1;
+            // BUG 7 FIX: Önceki callback'i temizle, yeni ekle (çoğalma önleme)
+            toggleSesKapat.UnregisterValueChangedCallback(OnSesToggleChanged);
             toggleSesKapat.RegisterValueChangedCallback(OnSesToggleChanged);
         }
 
@@ -119,11 +121,45 @@ public class SistemYonetici : MonoBehaviour
     {
         string chatPath = System.IO.Path.Combine(Application.persistentDataPath, "chat.json");
         if (System.IO.File.Exists(chatPath)) System.IO.File.Delete(chatPath);
-        GosterDurum(lblVeriDurum, "Sohbet geçmişi silindi! (Yeniden başlatın)", true);
+
+        // BUG 4 FIX: Sohbet UI'ını anında güncelle (yeniden başlatma gerektirmez)
+        var asistan = FindFirstObjectByType<ModernAsistanBaglantisi>();
+        if (asistan != null) asistan.SohbetGecmisiniYukle();
+
+        GosterDurum(lblVeriDurum, "Sohbet geçmişi silindi!", true);
     }
+
+    private bool gorevSilOnayBekliyor = false;
 
     private void OnGorevSilClicked()
     {
+        // Hata 5 FIX: Kazara tek dokunuşla tüm verilerin silinmesini önlemek için çift tıklama onayı
+        if (!gorevSilOnayBekliyor)
+        {
+            gorevSilOnayBekliyor = true;
+            if (btnGorevSil != null)
+            {
+                btnGorevSil.text = "EMİN MİSİNİZ? (TEKRAR TIKLAYIN)";
+                btnGorevSil.style.backgroundColor = new StyleColor(new Color(0.6f, 0.05f, 0.05f));
+                btnGorevSil.schedule.Execute(() => {
+                    gorevSilOnayBekliyor = false;
+                    if (btnGorevSil != null)
+                    {
+                        btnGorevSil.text = "Tüm Görevleri Sil";
+                        btnGorevSil.style.backgroundColor = new StyleColor(new Color(0.93f, 0.26f, 0.26f));
+                    }
+                }).StartingIn(3500);
+            }
+            return;
+        }
+
+        gorevSilOnayBekliyor = false;
+        if (btnGorevSil != null)
+        {
+            btnGorevSil.text = "Tüm Görevleri Sil";
+            btnGorevSil.style.backgroundColor = new StyleColor(new Color(0.93f, 0.26f, 0.26f));
+        }
+
         string tasksPath = System.IO.Path.Combine(Application.persistentDataPath, "tasks.json");
         string goalsPath = System.IO.Path.Combine(Application.persistentDataPath, "goals.json");
         if (System.IO.File.Exists(tasksPath)) System.IO.File.Delete(tasksPath);
@@ -148,6 +184,7 @@ public class SistemYonetici : MonoBehaviour
             ty.aktifHedefler.Clear();
             ty.HedefleriKaydet();
             ty.HedefleriYukle();
+            ty.TakvimGuncelle();
         }
 
         GosterDurum(lblVeriDurum, "Tüm görevler silindi!", true);

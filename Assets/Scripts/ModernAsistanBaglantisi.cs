@@ -18,6 +18,7 @@ public class ModernAsistanBaglantisi : MonoBehaviour
     private VisualElement emptySohbet;
     private TextField inputSohbetArama;
     private EventCallback<ChangeEvent<string>> _aramaCallback;
+    private bool wasKeyboardVisible = false;
 
     public SiberAsistan siberAsistan; 
 
@@ -43,6 +44,18 @@ public class ModernAsistanBaglantisi : MonoBehaviour
         {
             gonderButonu.clicked -= MesajGonderildi;
             gonderButonu.clicked += MesajGonderildi;
+        }
+
+        // Hata 10 FIX: Klavyeden Enter / Return tuşuna basınca mesaj gönder
+        if (mesajGirdisi != null)
+        {
+            mesajGirdisi.RegisterCallback<KeyDownEvent>(evt => {
+                if (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter)
+                {
+                    MesajGonderildi();
+                    evt.StopPropagation();
+                }
+            });
         }
 
         inputSohbetArama = root.Q<TextField>("inputSohbetArama");
@@ -100,12 +113,18 @@ public class ModernAsistanBaglantisi : MonoBehaviour
         
         if (sohbetGecmisi == null) sohbetGecmisi = new SohbetGecmisi();
 
-        if (sohbetGecmisi.mesajlar != null)
+        if (sohbetGecmisi.mesajlar != null && sohbetGecmisi.mesajlar.Count > 0)
         {
+            if (emptySohbet != null) emptySohbet.style.display = DisplayStyle.None;
             foreach (var msg in sohbetGecmisi.mesajlar)
             {
                 EkranaMesajBas(msg.metin, msg.kullaniciMi, false);
             }
+        }
+        else
+        {
+            // BUG 13 FIX: Mesaj yoksa boş sohbet placeholder'ını geri göster
+            if (emptySohbet != null) emptySohbet.style.display = DisplayStyle.Flex;
         }
     }
 
@@ -122,7 +141,9 @@ public class ModernAsistanBaglantisi : MonoBehaviour
 
             if (child is Label lbl)
             {
-                if (string.IsNullOrEmpty(kucukQuery) || lbl.text.ToLower().Contains(kucukQuery))
+                // BUG 11 FIX: Rich text tag'lerini temizle (arama doğruluğu için)
+                string plainText = Regex.Replace(lbl.text, "<.*?>", "").ToLower();
+                if (string.IsNullOrEmpty(kucukQuery) || plainText.Contains(kucukQuery))
                 {
                     child.style.display = DisplayStyle.Flex;
                 }
@@ -163,15 +184,51 @@ public class ModernAsistanBaglantisi : MonoBehaviour
     {
         if (inputContainer == null) return;
 
-        if (TouchScreenKeyboard.visible)
+        bool isKeyboardVisible = TouchScreenKeyboard.visible;
+
+        if (isKeyboardVisible)
         {
-            float keyboardHeight = TouchScreenKeyboard.area.height;
-            inputContainer.style.marginBottom = keyboardHeight;
+            float keyboardHeight = GetKeyboardHeightPanel();
+            if (keyboardHeight > 0)
+            {
+                inputContainer.style.marginBottom = keyboardHeight;
+
+                // Klavye ilk açıldığında en alta scroll yap (yazılan mesaj görünsün)
+                if (!wasKeyboardVisible && scrollSohbet != null)
+                {
+                    scrollSohbet.schedule.Execute(() => {
+                        scrollSohbet.scrollOffset = new Vector2(0, float.MaxValue);
+                    }).StartingIn(100);
+                }
+            }
         }
         else
         {
-            inputContainer.style.marginBottom = 0;
+            if (wasKeyboardVisible)
+            {
+                inputContainer.style.marginBottom = 0;
+            }
         }
+
+        wasKeyboardVisible = isKeyboardVisible;
+    }
+
+    /// <summary>
+    /// Klavye yüksekliğini ekran pikselinden UI Toolkit panel birimine çevirir.
+    /// BUG 9 FIX: İlk frame'de 0 dönen area.height değerini filtreler.
+    /// </summary>
+    private float GetKeyboardHeightPanel()
+    {
+        float screenKbHeight = TouchScreenKeyboard.area.height;
+        if (screenKbHeight <= 0) return 0f;
+
+        if (uiDocument == null || uiDocument.rootVisualElement == null || uiDocument.rootVisualElement.panel == null)
+            return screenKbHeight; // Fallback: ham piksel
+
+        var panel = uiDocument.rootVisualElement.panel;
+        Vector2 bottom = RuntimePanelUtils.ScreenToPanel(panel, new Vector2(0, 0));
+        Vector2 kbTop = RuntimePanelUtils.ScreenToPanel(panel, new Vector2(0, screenKbHeight));
+        return Mathf.Abs(kbTop.y - bottom.y);
     }
 
     void MesajGonderildi()
@@ -184,9 +241,18 @@ public class ModernAsistanBaglantisi : MonoBehaviour
         string gidenMesaj = mesajGirdisi.value;
         Debug.Log("Antigravity: Gönderilen Mesaj: " + gidenMesaj);
 
+        // Hata 5 FIX: SiberAsistan referansı Inspector'da boşsa otomatik bul, bulunamazsa butonu kilitleme
+        if (siberAsistan == null) siberAsistan = FindFirstObjectByType<SiberAsistan>();
+
         if (siberAsistan != null)
         {
             siberAsistan.ModernArayuzdenMesajAl(gidenMesaj);
+        }
+        else
+        {
+            isRequestActive = false;
+            if (gonderButonu != null) gonderButonu.SetEnabled(true);
+            Debug.LogError("SiberAsistan referansı bulunamadı!");
         }
 
         // Gönderdikten sonra kutuyu temizle

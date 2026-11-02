@@ -221,8 +221,8 @@ public class GorevKartiYonetici : MonoBehaviour
         undoToast.style.display = DisplayStyle.Flex;
         undoToast.style.opacity = 1f;
 
-        // Önceki zamanlayıcıyı iptal et
-        // (Yeni bir undo geldiğinde eskisi override edilir)
+        // BUG 6 FIX: Önceki zamanlayıcıyı iptal et
+        if (undoTimer != null) undoTimer.Pause();
 
         // 5 saniye sonra otomatik kapat
         undoTimer = undoToast.schedule.Execute(() => {
@@ -469,6 +469,7 @@ public class GorevKartiYonetici : MonoBehaviour
 
                 // Tamamlama animasyonu
                 TamamlamaAnimasyonu(kart, gorevYazisi, butonKutusu);
+                solPanel.SetEnabled(false); // BUG 5 FIX: Tamamlanan görevde düzenleme tıklamasını engelle
 
                 GuncelleProgressBar();
                 AktifGorevSayisiniGuncelle();
@@ -502,13 +503,14 @@ public class GorevKartiYonetici : MonoBehaviour
 
             btnDevret.clicked += () => {
                 ScheduleManager sManager = GetScheduleManager();
+                string yarinGorevId = System.Guid.NewGuid().ToString(); // BUG 10 FIX: Devredilen göreve benzersiz ID
                 if (sManager != null)
                 {
                     sManager.RemoveTask(gorevId);
                     string yarinTarih = System.DateTime.Now.AddDays(1).ToString("dd.MM.yyyy");
                     int sureInt = 0;
                     int.TryParse(sure, out sureInt);
-                    sManager.AddTask(yarinTarih, saat, gorevAdi, sureInt, katiMi, isRepeating, kategori, 15, oncelik, notlar, gorevId);
+                    sManager.AddTask(yarinTarih, saat, gorevAdi, sureInt, katiMi, isRepeating, kategori, 15, oncelik, notlar, yarinGorevId);
                 }
 
                 // Silme animasyonu
@@ -527,9 +529,8 @@ public class GorevKartiYonetici : MonoBehaviour
                 UndoToastGoster($"\"{gorevAdi}\" yarına devredildi", () => {
                     if (sManager != null)
                     {
-                        // Yarınki görevi sil, bugünkü geri ekle
-                        string yarinTarih2 = System.DateTime.Now.AddDays(1).ToString("dd.MM.yyyy");
-                        var yarinGorev = sManager.tasks.Find(t => t.id == gorevId && t.taskDate == yarinTarih2);
+                        // BUG 10 FIX: Yarınki görevi benzersiz ID ile sil, bugünkü geri ekle
+                        var yarinGorev = sManager.tasks.Find(t => t.id == yarinGorevId);
                         if (yarinGorev != null) sManager.tasks.Remove(yarinGorev);
                         
                         int sureInt2 = 0;
@@ -781,11 +782,15 @@ public class GorevKartiYonetici : MonoBehaviour
         int sureInt = 0;
         int.TryParse(yeniSure, out sureInt);
 
-        string saat = editSaat != null ? editSaat.value : "00";
-        string dakika = editDakika != null ? editDakika.value : "00";
-        if (saat.Length == 1) saat = "0" + saat;
-        if (dakika.Length == 1) dakika = "0" + dakika;
-        string yeniZaman = $"{saat}:{dakika}";
+        // Hata 2 FIX: Boş veya hatalı saat/dakika girişlerinde saatin bozulmasını ve bildirim çökmesini önle
+        string rawSaat = editSaat != null && !string.IsNullOrWhiteSpace(editSaat.value) ? editSaat.value.Trim() : "00";
+        string rawDakika = editDakika != null && !string.IsNullOrWhiteSpace(editDakika.value) ? editDakika.value.Trim() : "00";
+        int parsedSaat = 0, parsedDakika = 0;
+        int.TryParse(rawSaat, out parsedSaat);
+        int.TryParse(rawDakika, out parsedDakika);
+        parsedSaat = Mathf.Clamp(parsedSaat, 0, 23);
+        parsedDakika = Mathf.Clamp(parsedDakika, 0, 59);
+        string yeniZaman = $"{parsedSaat:D2}:{parsedDakika:D2}";
 
         ScheduleManager sManager = GetScheduleManager();
         if (sManager != null)

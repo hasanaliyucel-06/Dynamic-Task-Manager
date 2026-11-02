@@ -33,6 +33,13 @@ public class PageNavigator : MonoBehaviour
     private SistemYonetici sistemYonetici;
     private BildirimYonetici bildirimYonetici;
 
+    void Awake()
+    {
+        // Hata 7 FIX: Mobil cihazlarda varsayılan 30 FPS kısıtını kaldırıp pürüzsüz 60 FPS akıcılık sağla
+        QualitySettings.vSyncCount = 0;
+        Application.targetFrameRate = 60;
+    }
+
     void OnEnable()
     {
         uiDocument = GetComponent<UIDocument>();
@@ -40,21 +47,8 @@ public class PageNavigator : MonoBehaviour
 
         var root = uiDocument.rootVisualElement;
 
-        // Safe Area Desteği (Çentik/Notch Padding)
-        var mainContainer = root.Q<VisualElement>(className: "main-container");
-        if (mainContainer != null && root.panel != null)
-        {
-            Vector2 screenTop = RuntimePanelUtils.ScreenToPanel(root.panel, new Vector2(0, Screen.height));
-            Vector2 safeAreaTop = RuntimePanelUtils.ScreenToPanel(root.panel, new Vector2(0, Screen.safeArea.yMax));
-            Vector2 screenBottom = RuntimePanelUtils.ScreenToPanel(root.panel, new Vector2(0, 0));
-            Vector2 safeAreaBottom = RuntimePanelUtils.ScreenToPanel(root.panel, new Vector2(0, Screen.safeArea.yMin));
-
-            float topPadding = Mathf.Abs(screenTop.y - safeAreaTop.y);
-            float bottomPadding = Mathf.Abs(screenBottom.y - safeAreaBottom.y);
-
-            if (topPadding > 0) mainContainer.style.paddingTop = topPadding;
-            if (bottomPadding > 0) mainContainer.style.paddingBottom = bottomPadding;
-        }
+        // BUG 14 FIX: Safe Area Desteği (Dinamik çentik/notch ve orientation takibi)
+        GuncelleSafeArea();
 
         // Sayfa referansları
         pageSohbet = root.Q<VisualElement>("Page_Sohbet");
@@ -97,6 +91,16 @@ public class PageNavigator : MonoBehaviour
 
         // İlk sayfa: Sohbet
         SayfaDegistir(0);
+
+        // BUG 2 FIX: Görevler sayfası klavye desteği için bottom-bar referansı
+        if (pageGorevler != null)
+        {
+            gorevlerInputContainer = pageGorevler.Q<VisualElement>(className: "bottom-bar");
+        }
+
+        // BUG 8 FIX: Overlay referansları
+        gorevSihirbaziOverlay = root.Q<VisualElement>("gorevSihirbaziOverlay");
+        gorevDuzenleOverlay = root.Q<VisualElement>("gorevDuzenleOverlay");
 
         // Swipe gesture'ları kur
         SwipeKur(root);
@@ -170,6 +174,15 @@ public class PageNavigator : MonoBehaviour
         if (gunlukOzetOverlay != null) gunlukOzetOverlay.style.display = DisplayStyle.None;
     }
 
+    void OnApplicationPause(bool pauseStatus)
+    {
+        // Hata 7 FIX: Uygulama gün içinde arka plandan öne geldiğinde (resume) akşam özeti kontrolü yap
+        if (!pauseStatus && uiDocument != null && uiDocument.rootVisualElement != null)
+        {
+            KontrolGunlukOzet(uiDocument.rootVisualElement);
+        }
+    }
+
     void OnDisable()
     {
         // Event sızıntısını önle: tüm listener'ları temizle
@@ -177,6 +190,99 @@ public class PageNavigator : MonoBehaviour
         if (btnGorevler != null) btnGorevler.clicked -= OnGorevlerClicked;
         if (btnDisiplin != null) btnDisiplin.clicked -= OnDisiplinClicked;
         if (btnSistem != null) btnSistem.clicked -= OnSistemClicked;
+
+        // BUG 12 FIX: Swipe callback temizliği
+        if (swipeRoot != null)
+        {
+            if (swipeDownCallback != null) swipeRoot.UnregisterCallback(swipeDownCallback);
+            if (swipeUpCallback != null) swipeRoot.UnregisterCallback(swipeUpCallback);
+        }
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // KLAVYE VE SAFE AREA YÖNETİMİ (BUG 2 & BUG 14 FIX)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    private Rect lastSafeArea;
+    private Vector2Int lastScreenSize;
+    private VisualElement cachedMainContainer;
+
+    private void GuncelleSafeArea()
+    {
+        if (cachedMainContainer == null && uiDocument != null && uiDocument.rootVisualElement != null)
+        {
+            cachedMainContainer = uiDocument.rootVisualElement.Q<VisualElement>(className: "main-container");
+        }
+
+        if (cachedMainContainer != null && cachedMainContainer.panel != null)
+        {
+            Rect safeArea = Screen.safeArea;
+            Vector2Int screenSize = new Vector2Int(Screen.width, Screen.height);
+            if (safeArea == lastSafeArea && screenSize == lastScreenSize) return;
+
+            lastSafeArea = safeArea;
+            lastScreenSize = screenSize;
+
+            var panel = cachedMainContainer.panel;
+            Vector2 screenTop = RuntimePanelUtils.ScreenToPanel(panel, new Vector2(0, Screen.height));
+            Vector2 safeAreaTop = RuntimePanelUtils.ScreenToPanel(panel, new Vector2(0, safeArea.yMax));
+            Vector2 screenBottom = RuntimePanelUtils.ScreenToPanel(panel, new Vector2(0, 0));
+            Vector2 safeAreaBottom = RuntimePanelUtils.ScreenToPanel(panel, new Vector2(0, safeArea.yMin));
+
+            float topPadding = Mathf.Abs(screenTop.y - safeAreaTop.y);
+            float bottomPadding = Mathf.Abs(screenBottom.y - safeAreaBottom.y);
+
+            cachedMainContainer.style.paddingTop = topPadding > 0 ? topPadding : 0;
+            cachedMainContainer.style.paddingBottom = bottomPadding > 0 ? bottomPadding : 0;
+        }
+    }
+
+    void Update()
+    {
+        // BUG 14 FIX: Oryantasyon veya çözünürlük değişiminde safe area'yı güncelle
+        GuncelleSafeArea();
+
+        bool isKeyboardVisible = TouchScreenKeyboard.visible;
+
+        if (isKeyboardVisible)
+        {
+            float kbHeight = GetKeyboardHeightPanel();
+            if (kbHeight > 0)
+            {
+                if (gorevlerInputContainer != null) gorevlerInputContainer.style.marginBottom = kbHeight;
+                // BUG 8 FIX: Overlay açıkken klavye kadar paddingBottom ekle
+                if (gorevSihirbaziOverlay != null && gorevSihirbaziOverlay.resolvedStyle.display == DisplayStyle.Flex)
+                    gorevSihirbaziOverlay.style.paddingBottom = kbHeight;
+                if (gorevDuzenleOverlay != null && gorevDuzenleOverlay.resolvedStyle.display == DisplayStyle.Flex)
+                    gorevDuzenleOverlay.style.paddingBottom = kbHeight;
+            }
+        }
+        else
+        {
+            if (gorevlerWasKeyboardVisible)
+            {
+                if (gorevlerInputContainer != null) gorevlerInputContainer.style.marginBottom = 0;
+                if (gorevSihirbaziOverlay != null) gorevSihirbaziOverlay.style.paddingBottom = 0;
+                if (gorevDuzenleOverlay != null) gorevDuzenleOverlay.style.paddingBottom = 0;
+            }
+        }
+
+        gorevlerWasKeyboardVisible = isKeyboardVisible;
+    }
+
+    private float GetKeyboardHeightPanel()
+    {
+        float screenKbHeight = TouchScreenKeyboard.area.height;
+        if (screenKbHeight <= 0) return 0f;
+
+        if (uiDocument == null) return screenKbHeight;
+        var r = uiDocument.rootVisualElement;
+        if (r == null || r.panel == null) return screenKbHeight;
+
+        var panel = r.panel;
+        Vector2 bottom = RuntimePanelUtils.ScreenToPanel(panel, new Vector2(0, 0));
+        Vector2 kbTop = RuntimePanelUtils.ScreenToPanel(panel, new Vector2(0, screenKbHeight));
+        return Mathf.Abs(kbTop.y - bottom.y);
     }
 
     // Named event handler metotları (OnDisable'da temizlenebilir)
@@ -193,16 +299,41 @@ public class PageNavigator : MonoBehaviour
     private const int TOPLAM_SAYFA = 4;
     private Vector2 swipeBaslangic;
     private bool swipeAktif = false;
+    private bool swipeInsideScrollView = false;
     private const float SWIPE_ESIK = 80f; // Minimum swipe mesafesi (piksel)
+
+    // Görevler sayfası klavye desteği (BUG 2 FIX)
+    private VisualElement gorevlerInputContainer;
+    private bool gorevlerWasKeyboardVisible = false;
+
+    // Overlay klavye desteği (BUG 8 FIX)
+    private VisualElement gorevSihirbaziOverlay;
+    private VisualElement gorevDuzenleOverlay;
+
+    // Swipe cleanup referansları (BUG 12 FIX)
+    private EventCallback<PointerDownEvent> swipeDownCallback;
+    private EventCallback<PointerUpEvent> swipeUpCallback;
+    private VisualElement swipeRoot;
 
     private void SwipeKur(VisualElement root)
     {
-        root.RegisterCallback<PointerDownEvent>(evt => {
+        swipeRoot = root;
+
+        swipeDownCallback = evt => {
             swipeBaslangic = evt.position;
             swipeAktif = true;
-        });
 
-        root.RegisterCallback<PointerUpEvent>(evt => {
+            // BUG 3 FIX: ScrollView içinden başlayan swipe'ları işaretle
+            swipeInsideScrollView = false;
+            VisualElement target = evt.target as VisualElement;
+            while (target != null && target != root)
+            {
+                if (target is ScrollView) { swipeInsideScrollView = true; break; }
+                target = target.parent;
+            }
+        };
+
+        swipeUpCallback = evt => {
             if (!swipeAktif) return;
             swipeAktif = false;
 
@@ -210,8 +341,12 @@ public class PageNavigator : MonoBehaviour
             float deltaX = swipeBitis.x - swipeBaslangic.x;
             float deltaY = swipeBitis.y - swipeBaslangic.y;
 
+            // BUG 3 FIX: ScrollView içindeyse daha yüksek eşik ve oran uygula
+            float esik = swipeInsideScrollView ? Mathf.Max(SWIPE_ESIK, Screen.width * 0.2f) : SWIPE_ESIK;
+            float oran = swipeInsideScrollView ? 2.5f : 1.5f;
+
             // Yatay swipe'ın dikey swipe'dan belirgin olması gerekir
-            if (Mathf.Abs(deltaX) > SWIPE_ESIK && Mathf.Abs(deltaX) > Mathf.Abs(deltaY) * 1.5f)
+            if (Mathf.Abs(deltaX) > esik && Mathf.Abs(deltaX) > Mathf.Abs(deltaY) * oran)
             {
                 if (deltaX < 0)
                 {
@@ -226,7 +361,10 @@ public class PageNavigator : MonoBehaviour
                     if (yeniIndex != aktifSayfaIndex) SayfaDegistir(yeniIndex);
                 }
             }
-        });
+        };
+
+        root.RegisterCallback(swipeDownCallback);
+        root.RegisterCallback(swipeUpCallback);
     }
 
     /// <summary>

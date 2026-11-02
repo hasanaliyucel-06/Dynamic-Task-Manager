@@ -335,7 +335,10 @@ public class SihirbazYonetici : MonoBehaviour
                 temizCevap = temizCevap.Replace("[HEDEF:", "").Replace("]", "");
 
                 string[] parcalar = temizCevap.Split(':');
-                if (parcalar.Length >= 3)
+                bool basarili = false;
+
+                // Hata 3 FIX: En az 4 parça gerekli (saat_ss, saat_dd, görev_adı, süre)
+                if (parcalar.Length >= 4)
                 {
                     string saat = $"{parcalar[0].Trim()}:{parcalar[1].Trim()}";
                     string gelenSure = parcalar[parcalar.Length - 1].Trim();
@@ -346,11 +349,15 @@ public class SihirbazYonetici : MonoBehaviour
                     }
 
                     string gorevAdiParsed = string.Join(":", parcalar, 2, parcalar.Length - 3).Trim();
+                    if (string.IsNullOrEmpty(gorevAdiParsed))
+                    {
+                        gorevAdiParsed = hedefAdi;
+                    }
 
                     string bugun = System.DateTime.Now.ToString("dd.MM.yyyy");
                     if (gorevKartiYonetici != null)
                     {
-                        gorevKartiYonetici.GorevKartiEkle(bugun, saat, gorevAdiParsed, sadeceRakamlar, false);
+                        gorevKartiYonetici.GorevKartiEkle(bugun, saat, gorevAdiParsed, sadeceRakamlar, false, true, false, false, "Hedef", 2);
                     }
 
                     // Hedefi aktif hedefler listesine ekle
@@ -363,19 +370,33 @@ public class SihirbazYonetici : MonoBehaviour
                     HedefListesiWrapper wrapper = new HedefListesiWrapper();
                     wrapper.hedefler = takvimYonetici.aktifHedefler;
                     takvimYonetici.HedefleriKaydet();
+
+                    basarili = true;
                 }
                 else
                 {
                     Debug.LogWarning("AI Planlama formatı anlaşılamadı (Eksik parametre): " + cevap);
                 }
 
-                inputHedef.value = "";
-                takvimYonetici.SecilenBaslangic = null;
-                takvimYonetici.SecilenBitis = null;
-                takvimYonetici.HedefleriYukle();
-                takvimYonetici.TakvimGuncelle();
-                btnAiPlanla.text = "YAPAY ZEKAYA PLANLAT";
-                btnAiPlanla.SetEnabled(true);
+                // Hata 4 FIX: Başarısız olursa kullanıcının yazdığı hedefi silme ve hata göster
+                if (basarili)
+                {
+                    inputHedef.value = "";
+                    takvimYonetici.SecilenBaslangic = null;
+                    takvimYonetici.SecilenBitis = null;
+                    takvimYonetici.HedefleriYukle();
+                    takvimYonetici.TakvimGuncelle();
+                    btnAiPlanla.text = "YAPAY ZEKAYA PLANLAT";
+                    btnAiPlanla.SetEnabled(true);
+                }
+                else
+                {
+                    btnAiPlanla.text = "HATA - TEKRAR DENE";
+                    btnAiPlanla.schedule.Execute(() => {
+                        btnAiPlanla.text = "YAPAY ZEKAYA PLANLAT";
+                        btnAiPlanla.SetEnabled(true);
+                    }).StartingIn(2500);
+                }
             });
         }
         else
